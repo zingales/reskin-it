@@ -2,6 +2,7 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { Button } from '@chakra-ui/react'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -24,6 +25,12 @@ function App() {
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
+        {/* Chakra UI Test Button */}
+        <div style={{ marginTop: '1rem' }}>
+          <Button colorScheme="teal" size="md" onClick={() => alert('Chakra UI Button clicked')}>
+            Chakra UI Button
+          </Button>
+        </div>
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
