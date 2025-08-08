@@ -5,15 +5,7 @@ import {
   Image, 
   Flex
 } from '@chakra-ui/react'
-
-interface CardSet {
-  id: number
-  title: string
-  description: string
-  imageUrl: string
-  category: string
-  createdAt: string
-}
+import type { CardSet } from '../types/CardSet'
 
 interface CardSetViewerProps {
   cardSet: CardSet
