@@ -7,7 +7,10 @@ import {
   Flex,
   SimpleGrid,
   Spinner,
-  Center
+  Center,
+  Input,
+  InputGroup,
+  Icon
 } from '@chakra-ui/react'
 import { CardSetViewer } from './components/CardSetViewer'
 import type { CardSet } from './types/CardSet'
@@ -17,6 +20,7 @@ function App() {
   const [cardSets, setCardSets] = useState<CardSet[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Fetch data from database API
   useEffect(() => {
@@ -44,80 +48,167 @@ function App() {
     fetchCardSets()
   }, [])
 
+  // Filter card sets based on search query
+  const filteredCardSets = cardSets.filter(cardSet =>
+    cardSet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    cardSet.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    cardSet.category.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   return (
     <Box minH="100vh" bg="gray.50">
-      {/* Logo Section */}
+      {/* Hero Section with Large Logo and Search */}
       <Box 
-        bg="white" 
-        boxShadow="sm" 
-        position="sticky" 
-        top={0} 
-        zIndex={10}
-        borderBottom="1px"
-        borderColor="gray.200"
+        minH="100vh"
+        bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        position="relative"
       >
-        <Container maxW="container.xl" py={4}>
-          <Flex align="center" justify="center">
-            <Box textAlign="center">
+        <Container maxW="container.lg" textAlign="center">
+          <Box>
+            {/* Large Logo */}
+            <Box mb={12}>
               <Heading 
-                size="lg" 
-                color="blue.600" 
-                fontWeight="bold"
+                size="4xl" 
+                color="white" 
+                fontWeight="extrabold"
                 letterSpacing="tight"
+                textShadow="2px 2px 4px rgba(0,0,0,0.3)"
+                mb={6}
               >
                 ReskinIt
               </Heading>
-              <Text color="gray.600" fontSize="sm" mt={1}>
+              <Text 
+                color="white" 
+                fontSize="xl" 
+                opacity={0.9}
+                maxW="2xl"
+                lineHeight="tall"
+                mx="auto"
+              >
                 Professional UI Component Library
               </Text>
             </Box>
-          </Flex>
+
+            {/* Search Bar */}
+            <Box w="full" maxW="600px" mx="auto" position="relative">
+              <Input
+                placeholder="Search components, templates, and categories..."
+                bg="white"
+                border="none"
+                borderRadius="full"
+                boxShadow="lg"
+                pl={12}
+                size="lg"
+                _focus={{
+                  boxShadow: "xl",
+                  transform: "scale(1.02)"
+                }}
+                transition="all 0.2s"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Box position="absolute" left={4} top="50%" transform="translateY(-50%)" zIndex={2}>
+                <Icon color="gray.400" boxSize={5}>
+                  <path
+                    fill="currentColor"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </Icon>
+              </Box>
+            </Box>
+
+            {/* Scroll Indicator */}
+            <Box 
+              position="absolute" 
+              bottom={-20} 
+              left="50%" 
+              transform="translateX(-50%)"
+              animation="bounce 2s infinite"
+            >
+              <Text color="white" fontSize="sm" opacity={0.8}>
+                Scroll to explore
+              </Text>
+            </Box>
+          </Box>
         </Container>
       </Box>
 
-      {/* Main Content */}
-      <Container maxW="container.xl" py={8}>
-        {/* Hero Section */}
-        <Box textAlign="center" mb={12}>
-          <Heading 
-            size="2xl" 
-            color="gray.800" 
-            mb={4}
-            fontWeight="extrabold"
-          >
-            Discover Amazing Components
-          </Heading>
-          <Text 
-            fontSize="xl" 
-            color="gray.600" 
-            maxW="2xl" 
-            mx="auto"
-            lineHeight="tall"
-          >
-            Browse our collection of professionally designed components and templates. 
-            Each CardSet contains ready-to-use components for your next project.
-          </Text>
-        </Box>
-
-        {/* CardSet Grid */}
-        {loading ? (
-          <Center py={20}>
-            <Spinner size="xl" color="blue.500" />
-          </Center>
-        ) : error ? (
-          <Center py={20}>
-            <Text color="red.500" fontSize="lg">
-              {error}
+      {/* Content Section */}
+      <Box bg="gray.50" py={16}>
+        <Container maxW="container.xl">
+          {/* Section Header */}
+          <Box textAlign="center" mb={12}>
+            <Heading 
+              size="2xl" 
+              color="gray.800" 
+              mb={4}
+              fontWeight="extrabold"
+            >
+              Discover Amazing Components
+            </Heading>
+            <Text 
+              fontSize="lg" 
+              color="gray.600" 
+              maxW="2xl" 
+              mx="auto"
+              lineHeight="tall"
+            >
+              Browse our collection of professionally designed components and templates. 
+              Each CardSet contains ready-to-use components for your next project.
             </Text>
-          </Center>
-        ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={8}>
-            {cardSets.map((cardSet) => (
-              <CardSetViewer key={cardSet.id} cardSet={cardSet} />
-            ))}
-          </SimpleGrid>
-        )}
-      </Container>
+          </Box>
+
+          {/* CardSet Grid */}
+          {loading ? (
+            <Center py={20}>
+              <Spinner size="xl" color="blue.500" />
+            </Center>
+          ) : error ? (
+            <Center py={20}>
+              <Text color="red.500" fontSize="lg">
+                {error}
+              </Text>
+            </Center>
+          ) : filteredCardSets.length === 0 ? (
+            <Center py={20}>
+              <Box textAlign="center">
+                <Text color="gray.500" fontSize="lg" mb={2}>
+                  No components found matching "{searchQuery}"
+                </Text>
+                <Text color="gray.400" fontSize="sm">
+                  Try adjusting your search terms
+                </Text>
+              </Box>
+            </Center>
+          ) : (
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={8}>
+              {filteredCardSets.map((cardSet) => (
+                <CardSetViewer key={cardSet.id} cardSet={cardSet} />
+              ))}
+            </SimpleGrid>
+          )}
+        </Container>
+      </Box>
+
+      {/* Add CSS for bounce animation */}
+      <style>
+        {`
+          @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+              transform: translateX(-50%) translateY(0);
+            }
+            40% {
+              transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+              transform: translateX(-50%) translateY(-5px);
+            }
+          }
+        `}
+      </style>
     </Box>
   )
 }
