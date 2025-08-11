@@ -22,7 +22,8 @@
     "framer-motion": "^12.23.6",
     "prisma": "^6.13.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.8.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

@@ -1,9 +1,11 @@
 import express from 'express'
 import cors from 'cors'
 import { getAllCardSets, createCardSet, getCardSetById } from '../src/lib/database'
+import { PrismaClient } from '@prisma/client'
 
 const app = express()
 const PORT = process.env.PORT || 3001
+const prisma = new PrismaClient()
 
 // Middleware
 app.use(cors())
@@ -55,6 +57,30 @@ app.post('/api/cardsets', async (req, res) => {
   } catch (error) {
     console.error('Error creating card set:', error)
     res.status(500).json({ error: 'Failed to create card set' })
+  }
+})
+
+// Card Definitions endpoint
+app.get('/api/card-definitions', async (req, res) => {
+  try {
+    const cardDefinitions = await prisma.tokenEngineCardDefinition.findMany({
+      orderBy: [
+        { tier: 'asc' },
+        { points: 'desc' },
+        { token: 'asc' }
+      ]
+    })
+    
+    // Transform the cost from JSON string to Map-like object
+    const transformedDefinitions = cardDefinitions.map(card => ({
+      ...card,
+      cost: card.cost // Keep as string, will be parsed on frontend
+    }))
+    
+    res.json(transformedDefinitions)
+  } catch (error) {
+    console.error('Error fetching card definitions:', error)
+    res.status(500).json({ error: 'Failed to fetch card definitions' })
   }
 })
 

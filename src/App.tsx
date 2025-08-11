@@ -10,8 +10,10 @@ import {
   Center,
   Input,
   InputGroup,
-  Icon
+  Icon,
+  Button
 } from '@chakra-ui/react'
+import { Link } from 'react-router-dom'
 import { CardSetViewer } from './components/CardSetViewer'
 import type { CardSet } from './types/CardSet'
 import './App.css'
@@ -57,6 +59,33 @@ function App() {
 
   return (
     <Box minH="100vh" bg="gray.50">
+      {/* Navigation Bar */}
+      <Box bg="#667eea" shadow="md" position="fixed" top={0} left={0} right={0} zIndex={1000}>
+        <Container maxW="container.xl" py={4}>
+          <Flex justify="space-between" align="center">
+            <Link to="/">
+              <Heading size="lg" color="white" cursor="pointer">
+                ReskinIt
+              </Heading>
+            </Link>
+            <Link to="/card-definitions">
+              <Button 
+                bg="white"
+                color="blue.600"
+                _hover={{ bg: 'gray.100' }}
+                _active={{ bg: 'gray.200' }}
+                size="sm"
+                fontWeight="medium"
+                px={4}
+                py={2}
+              >
+                Card Definitions
+              </Button>
+            </Link>
+          </Flex>
+        </Container>
+      </Box>
+
       {/* Hero Section with Large Logo and Search */}
       <Box 
         minH="100vh"
@@ -65,6 +94,7 @@ function App() {
         alignItems="center"
         justifyContent="center"
         position="relative"
+        pt={16}
       >
         <Container maxW="container.lg" textAlign="center">
           <Box>
@@ -88,14 +118,14 @@ function App() {
                 lineHeight="tall"
                 mx="auto"
               >
-                Professional UI Component Library
+                Reskin your favorite card game
               </Text>
             </Box>
 
             {/* Search Bar */}
             <Box w="full" maxW="600px" mx="auto" position="relative">
               <Input
-                placeholder="Search components, templates, and categories..."
+                placeholder="Search ..."
                 bg="white"
                 border="none"
                 borderRadius="full"
@@ -107,18 +137,23 @@ function App() {
                   transform: "scale(1.02)"
                 }}
                 transition="all 0.2s"
+                color="gray.800"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Box position="absolute" left={4} top="50%" transform="translateY(-50%)" zIndex={2}>
                 <Icon color="gray.400" boxSize={5}>
-                  <path
-                    fill="currentColor"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                      fill="currentColor"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
                 </Icon>
               </Box>
             </Box>
+
+
 
             {/* Scroll Indicator */}
             <Box 
@@ -147,7 +182,7 @@ function App() {
               mb={4}
               fontWeight="extrabold"
             >
-              Discover Amazing Components
+              Discover What Others Are Reskinning
             </Heading>
             <Text 
               fontSize="lg" 
@@ -156,8 +191,7 @@ function App() {
               mx="auto"
               lineHeight="tall"
             >
-              Browse our collection of professionally designed components and templates. 
-              Each CardSet contains ready-to-use components for your next project.
+              Each card set is a collection of cards that have been reskinned.
             </Text>
           </Box>
 
@@ -176,7 +210,7 @@ function App() {
             <Center py={20}>
               <Box textAlign="center">
                 <Text color="gray.500" fontSize="lg" mb={2}>
-                  No components found matching "{searchQuery}"
+                  No card sets found matching "{searchQuery}"
                 </Text>
                 <Text color="gray.400" fontSize="sm">
                   Try adjusting your search terms

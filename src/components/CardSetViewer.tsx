@@ -52,9 +52,9 @@ export function CardSetViewer({ cardSet }: CardSetViewerProps) {
           >
             {cardSet.category}
           </Box>
-          <Text fontSize="sm" color="gray.500">
+          {/* <Text fontSize="sm" color="gray.500">
             {new Date(cardSet.createdAt).toLocaleDateString()}
-          </Text>
+          </Text> */}
         </Flex>
       </Box>
     </Box>
