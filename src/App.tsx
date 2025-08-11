@@ -9,7 +9,6 @@ import {
   Spinner,
   Center,
   Input,
-  InputGroup,
   Icon,
   Button
 } from '@chakra-ui/react'
@@ -23,6 +22,11 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'ReskinIt'
+  }, [])
 
   // Fetch data from database API
   useEffect(() => {

@@ -18,6 +18,11 @@ export default function CardDefinitions() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'Card Definitions'
+  }, [])
+
   // Fetch card definitions from API
   useEffect(() => {
     const fetchCardDefinitions = async () => {

@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { 
   Box, 
   Text, 
-  Input, 
-  Badge,
   Grid,
   VStack,
-  HStack
 } from '@chakra-ui/react'
 import type { TokenType, TokenEngineCardDefinition } from '../types/CardDefinition'
 
