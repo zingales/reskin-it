@@ -13,6 +13,10 @@ interface TokenEngineCardDefinitionViewerProps {
 
 export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: TokenEngineCardDefinitionViewerProps) {
   const [filteredCards, setFilteredCards] = useState<TokenEngineCardDefinition[]>(cardDefinitions)
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null
+    direction: 'asc' | 'desc'
+  }>({ key: null, direction: 'asc' })
   const [filters, setFilters] = useState({
     tokens: [] as TokenType[],
     tiers: [] as number[],
@@ -60,8 +64,65 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
       )
     })
 
+    // Apply sorting
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aValue: any
+        let bValue: any
+
+        switch (sortConfig.key) {
+          case 'id':
+            aValue = a.id
+            bValue = b.id
+            break
+          case 'token':
+            aValue = a.token
+            bValue = b.token
+            break
+          case 'tier':
+            aValue = a.tier
+            bValue = b.tier
+            break
+          case 'points':
+            aValue = a.points
+            bValue = b.points
+            break
+          case 'whiteCost':
+            aValue = parseCost(a.cost).WHITE
+            bValue = parseCost(b.cost).WHITE
+            break
+          case 'blueCost':
+            aValue = parseCost(a.cost).BLUE
+            bValue = parseCost(b.cost).BLUE
+            break
+          case 'greenCost':
+            aValue = parseCost(a.cost).GREEN
+            bValue = parseCost(b.cost).GREEN
+            break
+          case 'redCost':
+            aValue = parseCost(a.cost).RED
+            bValue = parseCost(b.cost).RED
+            break
+          case 'blackCost':
+            aValue = parseCost(a.cost).BLACK
+            bValue = parseCost(b.cost).BLACK
+            break
+          default:
+            return 0
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1
+        }
+        return 0
+      })
+    }
+
     setFilteredCards(filtered)
-  }, [cardDefinitions, filters])
+  }, [cardDefinitions, filters, sortConfig])
 
   const getTokenColorScheme = (token: TokenType) => {
     const colors = {
@@ -98,6 +159,20 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
       })
       return result
     }
+  }
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }))
+  }
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) {
+      return '↕️'
+    }
+    return sortConfig.direction === 'asc' ? '▴' : '▾'
   }
 
   const RangeSlider = ({ 
@@ -410,32 +485,167 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  ID
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('id')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  ID {getSortIcon('id')}
                 </th>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Token
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('token')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  Token {getSortIcon('token')}
                 </th>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Tier
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('tier')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  Tier {getSortIcon('tier')}
                 </th>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Points
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('points')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  Points {getSortIcon('points')}
                 </th>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  White Cost
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('whiteCost')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  White{getSortIcon('whiteCost')}
                 </th>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Blue Cost
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('blueCost')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  Blue{getSortIcon('blueCost')}
                 </th>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Green Cost
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('greenCost')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  Green{getSortIcon('greenCost')}
                 </th>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Red Cost
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('redCost')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  Red{getSortIcon('redCost')}
                 </th>
-                <th style={{ padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Black Cost
+                <th 
+                  style={{ 
+                    padding: '12px 24px', 
+                    textAlign: 'left', 
+                    fontSize: '12px', 
+                    fontWeight: '500', 
+                    color: '#6b7280', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em',
+                    cursor: 'pointer',
+                    userSelect: 'none'
+                  }}
+                  onClick={() => handleSort('blackCost')}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                >
+                  Black{getSortIcon('blackCost')}
                 </th>
               </tr>
             </thead>
