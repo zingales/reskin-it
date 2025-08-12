@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 interface LoginProps {
   onSwitchToRegister: () => void
@@ -10,16 +11,24 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToRegister }) => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   
   const { login } = useAuth()
+  const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess(false)
 
     try {
       await login(username, password)
+      setSuccess(true)
+      // Navigate to home page after a brief delay to show success message
+      setTimeout(() => {
+        navigate('/')
+      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -48,6 +57,18 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToRegister }) => {
                 border: '1px solid #feb2b2'
               }}>
                 {error}
+              </div>
+            )}
+            
+            {success && (
+              <div style={{ 
+                backgroundColor: '#c6f6d5', 
+                color: '#22543d', 
+                padding: '0.75rem', 
+                borderRadius: '0.375rem',
+                border: '1px solid #9ae6b4'
+              }}>
+                ✅ Login successful! Redirecting to home page...
               </div>
             )}
 

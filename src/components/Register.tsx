@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 interface RegisterProps {
   onSwitchToLogin: () => void
@@ -15,8 +16,10 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   
   const { register } = useAuth()
+  const navigate = useNavigate()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -29,6 +32,7 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess(false)
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
@@ -51,6 +55,11 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
         formData.password,
         formData.displayName || undefined
       )
+      setSuccess(true)
+      // Navigate to home page after a brief delay to show success message
+      setTimeout(() => {
+        navigate('/')
+      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
@@ -79,6 +88,18 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
                 border: '1px solid #feb2b2'
               }}>
                 {error}
+              </div>
+            )}
+            
+            {success && (
+              <div style={{ 
+                backgroundColor: '#c6f6d5', 
+                color: '#22543d', 
+                padding: '0.75rem', 
+                borderRadius: '0.375rem',
+                border: '1px solid #9ae6b4'
+              }}>
+                ✅ Account created successfully! Redirecting to home page...
               </div>
             )}
 

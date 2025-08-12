@@ -23,6 +23,8 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [logoutMessage, setLogoutMessage] = useState('')
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const { user, logout, loading: authLoading } = useAuth()
   const navigate = useNavigate()
 
@@ -30,6 +32,16 @@ function App() {
   useEffect(() => {
     document.title = 'ReskinIt'
   }, [])
+
+  // Handle logout with success message
+  const handleLogout = () => {
+    logout()
+    setLogoutMessage('✅ Logged out successfully!')
+    // Clear the message after 3 seconds
+    setTimeout(() => {
+      setLogoutMessage('')
+    }, 3000)
+  }
 
   // Fetch data from database API
   useEffect(() => {
@@ -93,20 +105,146 @@ function App() {
               
               {!authLoading && (
                 user ? (
-                  <Flex align="center" gap={3}>
-                    <Text color="white" fontSize="sm" fontWeight="medium">
-                      {user.displayName || user.username}
-                    </Text>
-                    <Button
-                      variant="ghost"
-                      color="white"
-                      _hover={{ bg: 'whiteAlpha.200' }}
-                      size="sm"
-                      onClick={logout}
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        padding: '0.5rem',
+                        borderRadius: '0.375rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={() => setProfileMenuOpen(true)}
                     >
-                      Logout
-                    </Button>
-                  </Flex>
+                      {user.displayName || user.username}
+                      <span style={{ fontSize: '0.75rem' }}>▼</span>
+                    </button>
+                    
+                    {profileMenuOpen && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          right: 0,
+                          backgroundColor: 'white',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '0.5rem',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                          minWidth: '200px',
+                          zIndex: 1000,
+                          marginTop: '0.5rem'
+                        }}
+                        onMouseLeave={() => setProfileMenuOpen(false)}
+                      >
+                        <div style={{ padding: '0.5rem 0' }}>
+                          <div style={{
+                            padding: '0.75rem 1rem',
+                            borderBottom: '1px solid #e2e8f0',
+                            color: '#4a5568',
+                            fontSize: '0.875rem'
+                          }}>
+                            Signed in as <strong>{user.email}</strong>
+                          </div>
+                          
+                          <button
+                            onClick={() => {
+                              setProfileMenuOpen(false)
+                              // Future: navigate to profile page
+                            }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '0.75rem 1rem',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#2d3748',
+                              fontSize: '0.875rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f7fafc'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                            }}
+                          >
+                            👤 Profile Settings
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setProfileMenuOpen(false)
+                              // Future: navigate to account settings
+                            }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '0.75rem 1rem',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#2d3748',
+                              fontSize: '0.875rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f7fafc'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                            }}
+                          >
+                            ⚙️ Account Settings
+                          </button>
+                          
+                          <div style={{
+                            borderTop: '1px solid #e2e8f0',
+                            margin: '0.5rem 0'
+                          }}></div>
+                          
+                          <button
+                            onClick={() => {
+                              setProfileMenuOpen(false)
+                              handleLogout()
+                            }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '0.75rem 1rem',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#e53e3e',
+                              fontSize: '0.875rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#fed7d7'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                            }}
+                          >
+                            🚪 Sign Out
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <Button
                     bg="white"
@@ -127,6 +265,27 @@ function App() {
           </Flex>
         </Container>
       </Box>
+
+      {/* Logout Success Message */}
+      {logoutMessage && (
+        <Box 
+          position="fixed" 
+          top="80px" 
+          left="50%" 
+          transform="translateX(-50%)" 
+          zIndex={999}
+          bg="green.100"
+          color="green.700"
+          px={4}
+          py={2}
+          borderRadius="md"
+          border="1px solid"
+          borderColor="green.200"
+          boxShadow="md"
+        >
+          {logoutMessage}
+        </Box>
+      )}
 
       {/* Hero Section with Large Logo and Search */}
       <Box 
