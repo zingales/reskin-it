@@ -1,0 +1,29 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background surface with depth -->
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="#d1d5db"/>
+  <rect x="3" y="3" width="26" height="26" rx="5" fill="#e5e7eb"/>
+  
+  <!-- Sticker shadow -->
+  <rect x="9" y="9" width="16" height="16" rx="3" fill="#4c51bf"/>
+  
+  <!-- Sticker being applied with depth -->
+  <rect x="8" y="8" width="16" height="16" rx="3" fill="#667eea"/>
+  <rect x="9" y="9" width="14" height="14" rx="2" fill="#7c3aed"/>
+  
+  <!-- Sticker peel effect with shadow -->
+  <rect x="7" y="7" width="8" height="16" rx="1" fill="#4c51bf"/>
+  <rect x="6" y="6" width="8" height="16" rx="1" fill="#e5e7eb"/>
+  
+  <!-- Sticker shine/reflection -->
+  <rect x="10" y="10" width="6" height="2" rx="1" fill="#a78bfa" opacity="0.6"/>
+  
+  <!-- R symbol underneath (original surface) -->
+  <text x="16" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#6b7280" filter="drop-shadow(0 1px 1px rgba(0,0,0,0.3))">R</text>
+  
+  <!-- R symbol on top (sticker) - only right half visible -->
+  <text x="16" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" filter="drop-shadow(0 1px 1px rgba(0,0,0,0.3))">R</text>
+  
+  <!-- Additional depth elements -->
+  <rect x="4" y="4" width="24" height="2" rx="1" fill="#f3f4f6" opacity="0.8"/>
+  <rect x="4" y="26" width="24" height="2" rx="1" fill="#9ca3af" opacity="0.6"/>
+</svg>
