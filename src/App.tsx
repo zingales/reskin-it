@@ -12,8 +12,9 @@ import {
   Icon,
   Button
 } from '@chakra-ui/react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CardSetViewer } from './components/CardSetViewer'
+import { useAuth } from './contexts/AuthContext'
 import type { CardSet } from './types/CardSet'
 import './App.css'
 
@@ -22,6 +23,8 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const { user, logout, loading: authLoading } = useAuth()
+  const navigate = useNavigate()
 
   // Set page title
   useEffect(() => {
@@ -72,20 +75,55 @@ function App() {
                 ReskinIt
               </Heading>
             </Link>
-            <Link to="/card-definitions">
-              <Button 
-                bg="white"
-                color="blue.600"
-                _hover={{ bg: 'gray.100' }}
-                _active={{ bg: 'gray.200' }}
-                size="sm"
-                fontWeight="medium"
-                px={4}
-                py={2}
-              >
-                Card Definitions
-              </Button>
-            </Link>
+            <Flex align="center" gap={4}>
+              <Link to="/card-definitions">
+                <Button 
+                  bg="white"
+                  color="blue.600"
+                  _hover={{ bg: 'gray.100' }}
+                  _active={{ bg: 'gray.200' }}
+                  size="sm"
+                  fontWeight="medium"
+                  px={4}
+                  py={2}
+                >
+                  Card Definitions
+                </Button>
+              </Link>
+              
+              {!authLoading && (
+                user ? (
+                  <Flex align="center" gap={3}>
+                    <Text color="white" fontSize="sm" fontWeight="medium">
+                      {user.displayName || user.username}
+                    </Text>
+                    <Button
+                      variant="ghost"
+                      color="white"
+                      _hover={{ bg: 'whiteAlpha.200' }}
+                      size="sm"
+                      onClick={logout}
+                    >
+                      Logout
+                    </Button>
+                  </Flex>
+                ) : (
+                  <Button
+                    bg="white"
+                    color="blue.600"
+                    _hover={{ bg: 'gray.100' }}
+                    _active={{ bg: 'gray.200' }}
+                    size="sm"
+                    fontWeight="medium"
+                    px={4}
+                    py={2}
+                    onClick={() => navigate('/auth')}
+                  >
+                    Sign In
+                  </Button>
+                )
+              )}
+            </Flex>
           </Flex>
         </Container>
       </Box>

@@ -1,10 +1,13 @@
 import express from 'express'
 import cors from 'cors'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 import { getAllCardSets, createCardSet, getCardSetById } from '../src/lib/database'
 import { PrismaClient } from '@prisma/client'
 
 const app = express()
 const PORT = process.env.PORT || 3001
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 const prisma = new PrismaClient()
 
 // Middleware
@@ -81,6 +84,156 @@ app.get('/api/card-definitions', async (req, res) => {
   } catch (error) {
     console.error('Error fetching card definitions:', error)
     res.status(500).json({ error: 'Failed to fetch card definitions' })
+  }
+})
+
+// Authentication endpoints
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, email, password, displayName } = req.body
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, email, and password are required' })
+    }
+    
+    // Check if user already exists
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { username },
+          { email }
+        ]
+      }
+    })
+    
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username or email already exists' })
+    }
+    
+    // Hash password
+    const saltRounds = 10
+    const hashedPassword = await bcrypt.hash(password, saltRounds)
+    
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        username,
+        email,
+        password: hashedPassword,
+        displayName: displayName || username
+      }
+    })
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+    
+    // Return user data (without password) and token
+    const { password: _, ...userWithoutPassword } = user
+    res.status(201).json({
+      user: userWithoutPassword,
+      token
+    })
+  } catch (error) {
+    console.error('Error registering user:', error)
+    res.status(500).json({ error: 'Failed to register user' })
+  }
+})
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' })
+    }
+    
+    // Find user by username or email
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { username },
+          { email: username }
+        ]
+      }
+    })
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+    
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+    
+    // Return user data (without password) and token
+    const { password: _, ...userWithoutPassword } = user
+    res.json({
+      user: userWithoutPassword,
+      token
+    })
+  } catch (error) {
+    console.error('Error logging in:', error)
+    res.status(500).json({ error: 'Failed to log in' })
+  }
+})
+
+// Middleware to verify JWT token
+const authenticateToken = (req: any, res: any, next: any) => {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' })
+  }
+  
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' })
+    }
+    req.user = user
+    next()
+  })
+}
+
+// Protected route example
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        displayName: true,
+        bio: true,
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+    
+    res.json(user)
+  } catch (error) {
+    console.error('Error fetching user:', error)
+    res.status(500).json({ error: 'Failed to fetch user' })
   }
 })
 
