@@ -5,6 +5,18 @@ import jwt from 'jsonwebtoken'
 import { getAllCardSets, createCardSet, getCardSetById } from '../src/lib/database'
 import { PrismaClient } from '@prisma/client'
 
+// Extend Express Request type to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: number;
+        username: string;
+      };
+    }
+  }
+}
+
 const app = express()
 const PORT = process.env.PORT || 3001
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
@@ -48,14 +60,22 @@ app.post('/api/cardsets', async (req, res) => {
     if (!title || !description || !imageUrl || !category) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
-    
+
+    // Require user authentication for creating card sets
+    if (!req.user?.userId) {
+      return res.status(401).json({ error: 'Authentication required' })
+    }
+    const userId = req.user.userId
+
     const cardSet = await createCardSet({
       title,
       description,
       imageUrl,
-      category
+      category,
+      userId,
+      user: null as any // This will be populated by Prisma when creating the record
     })
-    
+
     res.status(201).json(cardSet)
   } catch (error) {
     console.error('Error creating card set:', error)
@@ -213,7 +233,7 @@ const authenticateToken = (req: any, res: any, next: any) => {
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
+      where: { id: (req as any).user.userId },
       select: {
         id: true,
         username: true,
