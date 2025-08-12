@@ -119,7 +119,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
                   padding: '0.75rem',
                   border: '1px solid #e2e8f0',
                   borderRadius: '0.375rem',
-                  fontSize: '1rem'
+                  fontSize: '1rem',
+                  color: '#2d3748',
+                  backgroundColor: 'white'
                 }}
               />
             </div>
@@ -140,7 +142,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
                   padding: '0.75rem',
                   border: '1px solid #e2e8f0',
                   borderRadius: '0.375rem',
-                  fontSize: '1rem'
+                  fontSize: '1rem',
+                  color: '#2d3748',
+                  backgroundColor: 'white'
                 }}
               />
             </div>
@@ -160,7 +164,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
                   padding: '0.75rem',
                   border: '1px solid #e2e8f0',
                   borderRadius: '0.375rem',
-                  fontSize: '1rem'
+                  fontSize: '1rem',
+                  color: '#2d3748',
+                  backgroundColor: 'white'
                 }}
               />
             </div>
@@ -181,7 +187,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
                   padding: '0.75rem',
                   border: '1px solid #e2e8f0',
                   borderRadius: '0.375rem',
-                  fontSize: '1rem'
+                  fontSize: '1rem',
+                  color: '#2d3748',
+                  backgroundColor: 'white'
                 }}
               />
             </div>
@@ -202,7 +210,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
                   padding: '0.75rem',
                   border: '1px solid #e2e8f0',
                   borderRadius: '0.375rem',
-                  fontSize: '1rem'
+                  fontSize: '1rem',
+                  color: '#2d3748',
+                  backgroundColor: 'white'
                 }}
               />
             </div>
