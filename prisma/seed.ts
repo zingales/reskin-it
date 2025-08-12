@@ -77,6 +77,19 @@ async function seedTokenEngineCardDefinitions() {
 async function main() {
   // Clear existing data
   await prisma.cardSet.deleteMany()
+  await prisma.user.deleteMany()
+
+  // Create a test user
+  const testUser = await prisma.user.create({
+    data: {
+      username: 'SystemDefault',
+      email: 'reskinit.default@zingales.org',
+      password: 'hashed_password_here', // In production, this should be properly hashed
+      displayName: 'System Default',
+      bio: 'System default, to show the default card sets.',
+      avatarUrl: 'https://placehold.co/100x100/667eea/FFFFFF?text=DU'
+    }
+  })
 
   // Seed with initial CardSet data
   const cardSets = [
@@ -120,7 +133,10 @@ async function main() {
 
   for (const cardSet of cardSets) {
     await prisma.cardSet.create({
-      data: cardSet,
+      data: {
+        ...cardSet,
+        userId: testUser.id
+      },
     })
   }
 
