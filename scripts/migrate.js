@@ -1,13 +1,12 @@
 import { execSync } from 'child_process';
 
 const isProduction = process.env.NODE_ENV === 'production';
-const isLocal = !isProduction;
 
 console.log(`Running migrations in ${isProduction ? 'production' : 'local'} mode...`);
 
 try {
   if (isProduction) {
-    // Production: Use PostgreSQL migrations
+    // Production: Use Neon PostgreSQL
     console.log('1. Generating Prisma client...');
     execSync('npx prisma generate', { stdio: 'inherit' });
     
@@ -17,7 +16,7 @@ try {
     console.log('3. Seeding production database...');
     execSync('npm run seed', { stdio: 'inherit' });
   } else {
-    // Local: Use SQLite migrations
+    // Local: Use SQLite
     console.log('1. Generating Prisma client for SQLite...');
     execSync('npx prisma generate --schema=./prisma/schema.sqlite.prisma', { stdio: 'inherit' });
     
