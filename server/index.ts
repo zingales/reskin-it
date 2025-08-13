@@ -289,6 +289,24 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' })
 })
 
+// Database info endpoint
+app.get('/api/debug/db-info', async (req, res) => {
+  try {
+    const dbUrl = process.env.DATABASE_URL || 'not set'
+    const isPostgres = dbUrl.includes('postgresql://')
+    const isSqlite = dbUrl.includes('file:')
+    
+    res.json({
+      databaseUrl: isPostgres ? 'postgresql://***' : dbUrl,
+      provider: isPostgres ? 'PostgreSQL' : isSqlite ? 'SQLite' : 'Unknown',
+      isProduction: process.env.NODE_ENV === 'production',
+      hasDatabaseUrl: !!process.env.DATABASE_URL
+    })
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get database info' })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
 })
