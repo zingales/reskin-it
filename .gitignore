@@ -29,3 +29,6 @@ dist-ssr
 dev.db
 
 .env
+
+# Migration lock files (environment-specific)
+**/migration_lock.toml
