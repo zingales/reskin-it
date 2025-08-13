@@ -45,6 +45,8 @@ model CardSet {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([title, userId])
 }
 
 model TokenEngineCardDefinition {
@@ -55,4 +57,6 @@ model TokenEngineCardDefinition {
   cost        String   // JSON string for Map<TokenType, number>
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([token, tier, points])
 }
