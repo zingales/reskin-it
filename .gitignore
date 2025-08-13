@@ -27,3 +27,5 @@ dist-ssr
 
 # for local database
 dev.db
+
+.env
