@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 
@@ -5,7 +6,7 @@ const prisma = new PrismaClient()
 const JWT_SECRET = process.env.JWT_SECRET
 
 // Middleware to verify JWT token
-const authenticateToken = (req: any, res: any, next: () => void) => {
+const authenticateToken = (req: VercelRequest, res: VercelResponse, next: () => void) => {
   const authHeader = req.headers.authorization
   const token = authHeader && authHeader.split(' ')[1]
   
@@ -26,7 +27,7 @@ const authenticateToken = (req: any, res: any, next: () => void) => {
   })
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Apply authentication middleware
   authenticateToken(req, res, async () => {
     try {

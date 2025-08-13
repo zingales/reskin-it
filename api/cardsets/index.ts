@@ -1,6 +1,7 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getAllCardSets } from '../../src/lib/database'
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const cardSets = await getAllCardSets()
     res.json(cardSets)
