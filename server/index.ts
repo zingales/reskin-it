@@ -2,14 +2,14 @@ import express from 'express'
 import cors from 'cors'
 
 // Import all API handlers
-import healthHandler from '../api/health/index.js'
-import dbInfoHandler from '../api/debug/db-info.js'
-import cardsetsHandler from '../api/cardsets/index.js'
-import cardSetByIdHandler from '../api/cardsets/[id].js'
-import userCardSetsHandler from '../api/cardsets/user/me.js'
-import cardDefinitionsHandler from '../api/card-definitions/index.js'
-import registerHandler from '../api/auth/register.js'
-import loginHandler from '../api/auth/login.js'
+import healthHandler from './health/index.js'
+import dbInfoHandler from './debug/db-info.js'
+import cardsetsHandler from './cardsets/index.js'
+import cardSetByIdHandler from './cardsets/[id].js'
+import userCardSetsHandler from './cardsets/user/me.js'
+import cardDefinitionsHandler from './card-definitions/index.js'
+import registerHandler from './auth/register.js'
+import loginHandler from './auth/login.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -18,15 +18,15 @@ const PORT = process.env.PORT || 3001
 app.use(cors())
 app.use(express.json())
 
-// Route handlers
-app.get('/api/health', healthHandler)
-app.get('/api/debug/db-info', dbInfoHandler)
-app.get('/api/cardsets', cardsetsHandler)
-app.get('/api/cardsets/:id', cardSetByIdHandler)
-app.get('/api/cardsets/user/me', userCardSetsHandler)
-app.get('/api/card-definitions', cardDefinitionsHandler)
-app.post('/api/auth/register', registerHandler)
-app.post('/api/auth/login', loginHandler)
+// Route handlers - wrap Vercel handlers for Express compatibility
+app.get('/api/health', (req, res) => healthHandler(req as any, res as any))
+app.get('/api/debug/db-info', (req, res) => dbInfoHandler(req as any, res as any))
+app.get('/api/cardsets', (req, res) => cardsetsHandler(req as any, res as any))
+app.get('/api/cardsets/:id', (req, res) => cardSetByIdHandler(req as any, res as any))
+app.get('/api/cardsets/user/me', (req, res) => userCardSetsHandler(req as any, res as any))
+app.get('/api/card-definitions', (req, res) => cardDefinitionsHandler(req as any, res as any))
+app.post('/api/auth/register', (req, res) => registerHandler(req as any, res as any))
+app.post('/api/auth/login', (req, res) => loginHandler(req as any, res as any))
 
 // Start server
 app.listen(PORT, () => {

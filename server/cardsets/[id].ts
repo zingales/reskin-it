@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getCardSetById } from '../../src/lib/database'
+import { getCardSetById } from '../../client/src/lib/database'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
