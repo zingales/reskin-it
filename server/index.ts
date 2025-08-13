@@ -19,7 +19,7 @@ declare global {
 
 const app = express()
 const PORT = process.env.PORT || 3001
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET
 const prisma = new PrismaClient()
 
 // Middleware
@@ -33,6 +33,10 @@ const authenticateToken = (req: any, res: any, next: any) => {
   
   if (!token) {
     return res.status(401).json({ error: 'Access token required' })
+  }
+
+  if (!JWT_SECRET) {
+    return res.status(500).json({ error: 'JWT_SECRET is not set' })
   }
   
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
@@ -117,8 +121,7 @@ app.post('/api/cardsets', authenticateToken, async (req, res) => {
       description,
       imageUrl,
       category,
-      userId,
-      user: null as any // This will be populated by Prisma when creating the record
+      userId
     })
 
     res.status(201).json(cardSet)
@@ -188,6 +191,10 @@ app.post('/api/auth/register', async (req, res) => {
         displayName: displayName || username
       }
     })
+
+    if (!JWT_SECRET) {
+      return res.status(500).json({ error: 'JWT_SECRET is not set' })
+    }
     
     // Generate JWT token
     const token = jwt.sign(
@@ -235,6 +242,9 @@ app.post('/api/auth/login', async (req, res) => {
     
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' })
+    }
+    if (!JWT_SECRET) {
+      return res.status(500).json({ error: 'JWT_SECRET is not set' })
     }
     
     // Generate JWT token
@@ -296,11 +306,22 @@ app.get('/api/debug/db-info', async (req, res) => {
     const isPostgres = dbUrl.includes('postgresql://')
     const isSqlite = dbUrl.includes('file:')
     
+    // Test database connection
+    let dbTest = 'Not tested'
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      dbTest = 'Connected successfully'
+    } catch (error) {
+      dbTest = `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    }
+    
     res.json({
       databaseUrl: isPostgres ? 'postgresql://***' : dbUrl,
       provider: isPostgres ? 'PostgreSQL' : isSqlite ? 'SQLite' : 'Unknown',
       isProduction: process.env.NODE_ENV === 'production',
-      hasDatabaseUrl: !!process.env.DATABASE_URL
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      databaseTest: dbTest,
+      nodeEnv: process.env.NODE_ENV
     })
   } catch (error) {
     res.status(500).json({ error: 'Failed to get database info' })

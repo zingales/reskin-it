@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-    "build": "npm run migrate && tsc -b && vite build",
+    "build": "tsc -b && vite build",
     "build:client": "tsc -b && vite build",
+    "start": "npx tsx server/index.ts",
     "lint": "eslint .",
     "preview": "vite preview",
     "seed": "npx tsx prisma/seed.ts",
