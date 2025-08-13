@@ -102,6 +102,20 @@ function App() {
                   Card Definitions
                 </Button>
               </Link>
+              <Link to="/card-sets">
+                <Button 
+                  bg="white"
+                  color="blue.600"
+                  _hover={{ bg: 'gray.100' }}
+                  _active={{ bg: 'gray.200' }}
+                  size="sm"
+                  fontWeight="medium"
+                  px={4}
+                  py={2}
+                >
+                  My Card Sets
+                </Button>
+              </Link>
               
               {!authLoading && (
                 user ? (

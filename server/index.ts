@@ -26,6 +26,24 @@ const prisma = new PrismaClient()
 app.use(cors())
 app.use(express.json())
 
+// Middleware to verify JWT token
+const authenticateToken = (req: any, res: any, next: any) => {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' })
+  }
+  
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid token' })
+    }
+    req.user = user
+    next()
+  })
+}
+
 // Routes
 app.get('/api/cardsets', async (req, res) => {
   try {
@@ -34,6 +52,37 @@ app.get('/api/cardsets', async (req, res) => {
   } catch (error) {
     console.error('Error fetching card sets:', error)
     res.status(500).json({ error: 'Failed to fetch card sets' })
+  }
+})
+
+// Get card sets for authenticated user
+app.get('/api/cardsets/user/me', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user!.userId
+    
+    const userCardSets = await prisma.cardSet.findMany({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            displayName: true,
+            bio: true,
+            avatarUrl: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    
+    res.json(userCardSets)
+  } catch (error) {
+    console.error('Error fetching user card sets:', error)
+    res.status(500).json({ error: 'Failed to fetch user card sets' })
   }
 })
 
@@ -53,7 +102,7 @@ app.get('/api/cardsets/:id', async (req, res) => {
   }
 })
 
-app.post('/api/cardsets', async (req, res) => {
+app.post('/api/cardsets', authenticateToken, async (req, res) => {
   try {
     const { title, description, imageUrl, category } = req.body
     
@@ -61,11 +110,7 @@ app.post('/api/cardsets', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Require user authentication for creating card sets
-    if (!req.user?.userId) {
-      return res.status(401).json({ error: 'Authentication required' })
-    }
-    const userId = req.user.userId
+    const userId = req.user!.userId
 
     const cardSet = await createCardSet({
       title,
@@ -210,24 +255,6 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: 'Failed to log in' })
   }
 })
-
-// Middleware to verify JWT token
-const authenticateToken = (req: any, res: any, next: any) => {
-  const authHeader = req.headers['authorization']
-  const token = authHeader && authHeader.split(' ')[1]
-  
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' })
-  }
-  
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid token' })
-    }
-    req.user = user
-    next()
-  })
-}
 
 // Protected route example
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
