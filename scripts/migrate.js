@@ -7,13 +7,20 @@ const isProduction = process.env.NODE_ENV === 'production';
 console.log(`Running migrations in ${isProduction ? 'production' : 'local'} mode...`);
 
 try {
+  const mainMigrationsDir = path.join('prisma', 'migrations');
+    
+  // Create migrations directory if it doesn't exist
+  if (!fs.existsSync(mainMigrationsDir)) {
+    fs.mkdirSync(mainMigrationsDir, { recursive: true });
+    console.log('Created migrations directory');
+  }
   if (isProduction) {
     // Production: Use Neon PostgreSQL
     console.log('1. Setting up PostgreSQL migrations...');
     
     // Clear existing migrations and copy PostgreSQL ones
     const postgresDir = path.join('prisma', 'postgres-migrations');
-    const mainMigrationsDir = path.join('prisma', 'migrations');
+    
     
     // Remove existing migrations (but keep the directory structure)
     const existingDirs = fs.readdirSync(mainMigrationsDir);
@@ -69,7 +76,6 @@ provider = "postgresql"
     
     // Clear existing migrations and copy SQLite ones
     const sqliteDir = path.join('prisma', 'sqlite-migrations');
-    const mainMigrationsDir = path.join('prisma', 'migrations');
     
     // Remove existing migrations (but keep the directory structure)
     const existingDirs = fs.readdirSync(mainMigrationsDir);
