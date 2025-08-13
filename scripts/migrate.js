@@ -12,14 +12,14 @@ try {
     console.log('1. Setting up PostgreSQL migrations...');
     
     // Clear existing migrations and copy PostgreSQL ones
-    const postgresDir = path.join('prisma', 'migrations', 'postgres');
+    const postgresDir = path.join('prisma', 'postgres-migrations');
     const mainMigrationsDir = path.join('prisma', 'migrations');
     
     // Remove existing migrations (but keep the directory structure)
     const existingDirs = fs.readdirSync(mainMigrationsDir);
     for (const dir of existingDirs) {
       const dirPath = path.join(mainMigrationsDir, dir);
-      if (fs.statSync(dirPath).isDirectory() && dir !== 'postgres' && dir !== 'sqlite') {
+      if (fs.statSync(dirPath).isDirectory()) {
         fs.rmSync(dirPath, { recursive: true, force: true });
         console.log(`Removed existing migration: ${dir}`);
       }
@@ -68,14 +68,14 @@ provider = "postgresql"
     console.log('1. Setting up SQLite migrations...');
     
     // Clear existing migrations and copy SQLite ones
-    const sqliteDir = path.join('prisma', 'migrations', 'sqlite');
+    const sqliteDir = path.join('prisma', 'sqlite-migrations');
     const mainMigrationsDir = path.join('prisma', 'migrations');
     
     // Remove existing migrations (but keep the directory structure)
     const existingDirs = fs.readdirSync(mainMigrationsDir);
     for (const dir of existingDirs) {
       const dirPath = path.join(mainMigrationsDir, dir);
-      if (fs.statSync(dirPath).isDirectory() && dir !== 'postgres' && dir !== 'sqlite') {
+      if (fs.statSync(dirPath).isDirectory()) {
         fs.rmSync(dirPath, { recursive: true, force: true });
         console.log(`Removed existing migration: ${dir}`);
       }
