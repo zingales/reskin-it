@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-    "build": "tsc -b && vite build",
+    "build": "npm run db:generate && npm run db:push && npm run seed && tsc -b && vite build",
+    "build:client": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "seed": "npx tsx prisma/seed.ts",
@@ -14,7 +15,8 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:push:sqlite": "prisma db push --schema=./prisma/schema.sqlite.prisma",
-    "db:generate:sqlite": "prisma generate --schema=./prisma/schema.sqlite.prisma"
+    "db:generate:sqlite": "prisma generate --schema=./prisma/schema.sqlite.prisma",
+    "db:deploy": "prisma db push && npm run seed"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.22.0",
