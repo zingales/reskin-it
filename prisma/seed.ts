@@ -54,34 +54,53 @@ async function seedTokenEngineCardDefinitions() {
   const csvContent = fs.readFileSync(csvPath, 'utf-8')
   const csvRows = parseCSV(csvContent)
   
-  // Clear existing TokenEngineCardDefinitions
-  await prisma.tokenEngineCardDefinition.deleteMany()
-  
-  // Create TokenEngineCardDefinitions from CSV data
+  // Upsert TokenEngineCardDefinitions from CSV data
   for (const row of csvRows) {
     const costObject = createCostObject(row)
+    const token = row.token.toUpperCase() as 'WHITE' | 'BLUE' | 'GREEN' | 'RED' | 'BLACK'
+    const points = parseInt(row.points)
+    const tier = parseInt(row.tier)
+    const cost = JSON.stringify(costObject)
     
-    await prisma.tokenEngineCardDefinition.create({
-      data: {
-        token: row.token.toUpperCase() as 'WHITE' | 'BLUE' | 'GREEN' | 'RED' | 'BLACK',
-        points: parseInt(row.points),
-        tier: parseInt(row.tier),
-        cost: JSON.stringify(costObject),
-      },
+    // Check if exact record exists (same token, tier, points, AND cost)
+    const existing = await prisma.tokenEngineCardDefinition.findFirst({
+      where: {
+        token,
+        tier,
+        points,
+        cost,
+      }
     })
+
+    if (!existing) {
+      // Create new record only if it doesn't exist
+      await prisma.tokenEngineCardDefinition.create({
+        data: {
+          token,
+          points,
+          tier,
+          cost,
+        }
+      })
+    }
   }
   
-  console.log(`Created ${csvRows.length} TokenEngineCardDefinitions from CSV`)
+  console.log(`Upserted ${csvRows.length} TokenEngineCardDefinitions from CSV`)
 }
 
 async function main() {
-  // Clear existing data
-  await prisma.cardSet.deleteMany()
-  await prisma.user.deleteMany()
+  console.log('Starting database seeding with upserts...')
 
-  // Create a test user
-  const testUser = await prisma.user.create({
-    data: {
+  // Upsert the system default user
+  const testUser = await prisma.user.upsert({
+    where: { username: 'SystemDefault' },
+    update: {
+      email: 'reskinit.default@zingales.org',
+      displayName: 'System Default',
+      bio: 'System default, to show the default card sets.',
+      avatarUrl: 'https://placehold.co/100x100/667eea/FFFFFF?text=DU'
+    },
+    create: {
       username: 'SystemDefault',
       email: 'reskinit.default@zingales.org',
       password: 'hashed_password_here', // In production, this should be properly hashed
@@ -91,7 +110,9 @@ async function main() {
     }
   })
 
-  // Seed with initial CardSet data
+  console.log('✅ System default user upserted')
+
+  // Seed with initial CardSet data using upserts
   const cardSets = [
     {
       title: "Modern UI Components",
@@ -131,19 +152,33 @@ async function main() {
     },
   ]
 
+  // Upsert card sets (using title as unique identifier)
   for (const cardSet of cardSets) {
-    await prisma.cardSet.create({
-      data: {
+    await prisma.cardSet.upsert({
+      where: { 
+        title_userId: {
+          title: cardSet.title,
+          userId: testUser.id
+        }
+      },
+      update: {
+        description: cardSet.description,
+        imageUrl: cardSet.imageUrl,
+        category: cardSet.category,
+      },
+      create: {
         ...cardSet,
         userId: testUser.id
       },
     })
   }
 
+  console.log('✅ Default card sets upserted')
+
   // Seed TokenEngineCardDefinitions from CSV
   await seedTokenEngineCardDefinitions()
 
-  console.log('Database seeded successfully!')
+  console.log('✅ Database seeding completed successfully!')
 }
 
 main()

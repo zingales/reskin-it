@@ -44,6 +44,8 @@ model CardSet {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([title, userId])
 }
 
 model TokenEngineCardDefinition {

@@ -30,7 +30,7 @@ export default function CardDefinitions() {
         setLoading(true)
         setError(null)
         
-        const response = await fetch('http://localhost:3001/api/card-definitions')
+        const response = await fetch('/api/card-definitions')
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)

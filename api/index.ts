@@ -1,29 +1,91 @@
-import express from 'express'
-import cors from 'cors'
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
-import { getAllCardSets, createCardSet, getCardSetById } from '../src/lib/database'
-import { PrismaClient } from '@prisma/client'
+const express = require('express')
+const cors = require('cors')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const { PrismaClient } = require('@prisma/client')
 
-// Extend Express Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: number;
-        username: string;
-      };
-    }
+// Prisma client initialization for serverless environments
+let prisma: any
+
+// Cache the Prisma client instance for serverless environments
+if (process.env.NODE_ENV === 'production') {
+  // In production (Vercel), use a cached instance
+  if (!(global as any).__prisma) {
+    (global as any).__prisma = new PrismaClient()
+  }
+  prisma = (global as any).__prisma
+} else {
+  // In development, create a new instance
+  prisma = new PrismaClient()
+}
+
+async function getAllCardSets() {
+  try {
+    const cardSets = await prisma.cardSet.findMany({
+      include: {
+        user: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+    return cardSets
+  } catch (error) {
+    console.error('Error fetching card sets:', error)
+    throw error
   }
 }
+
+async function createCardSet(data: any) {
+  try {
+    const cardSet = await prisma.cardSet.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        category: data.category,
+        userId: data.userId
+      },
+      include: {
+        user: true
+      }
+    })
+    return cardSet
+  } catch (error) {
+    console.error('Error creating card set:', error)
+    throw error
+  }
+}
+
+async function getCardSetById(id: number) {
+  try {
+    const cardSet = await prisma.cardSet.findUnique({
+      where: { id },
+      include: {
+        user: true
+      }
+    })
+    return cardSet
+  } catch (error) {
+    console.error('Error fetching card set:', error)
+    throw error
+  }
+}
+
+// Note: In CommonJS, we can't use global type declarations
+// We'll handle req.user typing with 'any' types
 
 const app = express()
 const PORT = process.env.PORT || 3001
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const prisma = new PrismaClient()
 
 // Middleware
-app.use(cors())
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://reskin-it.vercel.app'] 
+    : ['http://localhost:5173'],
+  credentials: true
+}))
 app.use(express.json())
 
 // Middleware to verify JWT token
@@ -45,7 +107,7 @@ const authenticateToken = (req: any, res: any, next: any) => {
 }
 
 // Routes
-app.get('/api/cardsets', async (req, res) => {
+app.get('/api/cardsets', async (_req: any, res: any) => {
   try {
     const cardSets = await getAllCardSets()
     res.json(cardSets)
@@ -56,7 +118,7 @@ app.get('/api/cardsets', async (req, res) => {
 })
 
 // Get card sets for authenticated user
-app.get('/api/cardsets/user/me', authenticateToken, async (req, res) => {
+app.get('/api/cardsets/user/me', authenticateToken, async (req: any, res: any) => {
   try {
     const userId = req.user!.userId
     
@@ -86,7 +148,7 @@ app.get('/api/cardsets/user/me', authenticateToken, async (req, res) => {
   }
 })
 
-app.get('/api/cardsets/:id', async (req, res) => {
+app.get('/api/cardsets/:id', async (req: any, res: any) => {
   try {
     const id = parseInt(req.params.id)
     const cardSet = await getCardSetById(id)
@@ -95,14 +157,14 @@ app.get('/api/cardsets/:id', async (req, res) => {
       return res.status(404).json({ error: 'Card set not found' })
     }
     
-    res.json(cardSet)
+    return res.json(cardSet)
   } catch (error) {
     console.error('Error fetching card set:', error)
-    res.status(500).json({ error: 'Failed to fetch card set' })
+    return res.status(500).json({ error: 'Failed to fetch card set' })
   }
 })
 
-app.post('/api/cardsets', authenticateToken, async (req, res) => {
+app.post('/api/cardsets', authenticateToken, async (req: any, res: any) => {
   try {
     const { title, description, imageUrl, category } = req.body
     
@@ -117,19 +179,18 @@ app.post('/api/cardsets', authenticateToken, async (req, res) => {
       description,
       imageUrl,
       category,
-      userId,
-      user: null as any // This will be populated by Prisma when creating the record
+      userId
     })
 
-    res.status(201).json(cardSet)
+    return res.status(201).json(cardSet)
   } catch (error) {
     console.error('Error creating card set:', error)
-    res.status(500).json({ error: 'Failed to create card set' })
+    return res.status(500).json({ error: 'Failed to create card set' })
   }
 })
 
 // Card Definitions endpoint
-app.get('/api/card-definitions', async (req, res) => {
+app.get('/api/card-definitions', async (_req: any, res: any) => {
   try {
     const cardDefinitions = await prisma.tokenEngineCardDefinition.findMany({
       orderBy: [
@@ -140,20 +201,20 @@ app.get('/api/card-definitions', async (req, res) => {
     })
     
     // Transform the cost from JSON string to Map-like object
-    const transformedDefinitions = cardDefinitions.map(card => ({
+    const transformedDefinitions = cardDefinitions.map((card: typeof cardDefinitions[0]) => ({
       ...card,
       cost: card.cost // Keep as string, will be parsed on frontend
     }))
     
-    res.json(transformedDefinitions)
+    return res.json(transformedDefinitions)
   } catch (error) {
     console.error('Error fetching card definitions:', error)
-    res.status(500).json({ error: 'Failed to fetch card definitions' })
+    return res.status(500).json({ error: 'Failed to fetch card definitions' })
   }
 })
 
 // Authentication endpoints
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', async (req: any, res: any) => {
   try {
     const { username, email, password, displayName } = req.body
     
@@ -198,17 +259,17 @@ app.post('/api/auth/register', async (req, res) => {
     
     // Return user data (without password) and token
     const { password: _, ...userWithoutPassword } = user
-    res.status(201).json({
+    return res.status(201).json({
       user: userWithoutPassword,
       token
     })
   } catch (error) {
     console.error('Error registering user:', error)
-    res.status(500).json({ error: 'Failed to register user' })
+    return res.status(500).json({ error: 'Failed to register user' })
   }
 })
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', async (req: any, res: any) => {
   try {
     const { username, password } = req.body
     
@@ -246,18 +307,18 @@ app.post('/api/auth/login', async (req, res) => {
     
     // Return user data (without password) and token
     const { password: _, ...userWithoutPassword } = user
-    res.json({
+    return res.json({
       user: userWithoutPassword,
       token
     })
   } catch (error) {
     console.error('Error logging in:', error)
-    res.status(500).json({ error: 'Failed to log in' })
+    return res.status(500).json({ error: 'Failed to log in' })
   }
 })
 
 // Protected route example
-app.get('/api/auth/me', authenticateToken, async (req, res) => {
+app.get('/api/auth/me', authenticateToken, async (req: any, res: any) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: (req as any).user.userId },
@@ -277,18 +338,28 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
     
-    res.json(user)
+    return res.json(user)
   } catch (error) {
     console.error('Error fetching user:', error)
-    res.status(500).json({ error: 'Failed to fetch user' })
+    return res.status(500).json({ error: 'Failed to fetch user' })
   }
 })
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' })
+app.get('/api/health', (_req: any, res: any) => {
+  return res.json({ status: 'OK', message: 'Server is running' })
 })
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`)
-})
+// For Vercel deployment
+// Because of typing mismatch we can't add the types. But the following types are:
+// req: VercelRequest, res: VercelResponse
+module.exports = function handler(req: any, res: any) {
+  return app(req, res)
+}
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`)
+  })
+}

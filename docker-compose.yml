@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: reskin-it-postgres
+    environment:
+      POSTGRES_DB: reskinit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

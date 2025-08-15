@@ -125,7 +125,7 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
         throw new Error('Authentication required')
       }
 
-      const response = await fetch('http://localhost:3001/api/cardsets', {
+      const response = await fetch('/api/cardsets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

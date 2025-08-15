@@ -28,4 +28,9 @@ dist-ssr
 # for local database
 dev.db
 
+# TypeScript build info
+*.tsbuildinfo
+
 .env
+.vercel
+api/schema.prisma

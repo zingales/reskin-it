@@ -1,0 +1,29 @@
+{
+  "buildCommand": "npm ci --include=dev && cp prisma/schema.prisma api/schema.prisma && cd api && npx prisma generate && cd .. && npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "installCommand": "npm install",
+  "git": {
+    "deploymentEnabled": false
+  },
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 30,
+      "runtime": "@vercel/node@5.3.12"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.ts"
+    }
+  ],
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "env": {
+    "PRISMA_GENERATE_DATAPROXY": "true"
+  }
+}

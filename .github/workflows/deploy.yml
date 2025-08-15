@@ -1,0 +1,151 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NODE_ENV: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci --include=dev
+        
+      - name: Generate Prisma client
+        run: npx prisma generate
+        
+      - name: Type check and build
+        run: |
+          echo "🔍 Running TypeScript type check..."
+          npx tsc --noEmit
+          echo "✅ TypeScript check passed"
+          
+          echo "🔨 Building application..."
+          npm run build
+          echo "✅ Build completed"
+        
+      - name: Deploy to Vercel
+        run: |
+          # Deploy to Vercel with environment variables
+          npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes \
+            --env DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --env JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --env NODE_ENV="production"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          
+      - name: Run database migrations
+        run: |
+          echo "🔄 Starting database migrations..."
+          
+          
+          echo "🔍 Using DATABASE_URL: ${DATABASE_URL}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:0:30}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:30:60}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:60:90}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:90:120}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:120:150}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:150:180}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:180:210}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:210:240}..."
+          echo "🔍 DATABASE_URL: ${DATABASE_URL:240:270}..."
+          
+          echo "✅ Environment variables loaded successfully"
+          
+          # Run migrations with timeout and better error handling
+          echo "🔄 Running Prisma migrations..."
+          echo "🔍 Testing database connection first..."
+          
+          # Test connection with timeout
+          timeout 30s npx prisma db execute --stdin --schema=./prisma/schema.prisma <<< "SELECT 1;" || {
+            echo "❌ Database connection test failed or timed out"
+            echo "🔍 Checking if database is accessible..."
+            echo "🔍 DATABASE_URL: ${DATABASE_URL:0:30}..." # Show first 50 chars for debugging
+            exit 1
+          }
+          
+          echo "✅ Database connection test passed"
+          
+          # Run migrations with timeout
+          timeout 60s npx prisma migrate deploy --schema=./prisma/schema.prisma || {
+            echo "❌ Migration failed or timed out"
+            exit 1
+          }
+          
+          echo "✅ Database migrations completed successfully"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          
+      - name: Seed database
+        run: |
+          echo "🌱 Starting database seeding..."
+          
+          echo "🔍 Testing database connection before seeding..."
+          
+          # Test connection with timeout
+          timeout 30s npx prisma db execute --stdin --schema=./prisma/schema.prisma <<< "SELECT 1;" || {
+            echo "❌ Database connection test failed or timed out"
+            exit 1
+          }
+          
+          echo "✅ Database connection test passed"
+          
+          # Run seed script with timeout
+          echo "🌱 Running seed script..."
+          timeout 120s npm run seed || {
+            echo "❌ Seeding failed or timed out"
+            exit 1
+          }
+          
+          echo "✅ Database seeding completed successfully"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+          
+          # Get the deployment URL and status (look for the most recent reskin-* deployment)
+          DEPLOYMENT_URL=$(npx vercel ls --token ${{ secrets.VERCEL_TOKEN }} | grep "reskin-" | head -1)
+          
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "❌ Could not find deployment URL"
+            exit 1
+          fi
+          
+          echo "✅ Deployment verified at: $DEPLOYMENT_URL"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Deployment, migrations, and seeding completed successfully"
+          else
+            echo "❌ Deployment, migrations, or seeding failed"
+          fi

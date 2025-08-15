@@ -12,6 +12,9 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 export async function getAllCardSets(): Promise<CardSet[]> {
   try {
     const cardSets = await prisma.cardSet.findMany({
+      include: {
+        user: true
+      },
       orderBy: {
         createdAt: 'desc'
       }
@@ -23,10 +26,19 @@ export async function getAllCardSets(): Promise<CardSet[]> {
   }
 }
 
-export async function createCardSet(data: Omit<CardSet, 'id' | 'createdAt' | 'updatedAt'>): Promise<CardSet> {
+export async function createCardSet(data: Omit<CardSet, 'id' | 'createdAt' | 'updatedAt' | 'user'>): Promise<CardSet> {
   try {
     const cardSet = await prisma.cardSet.create({
-      data
+      data: {
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        category: data.category,
+        userId: data.userId
+      },
+      include: {
+        user: true
+      }
     })
     return cardSet
   } catch (error) {
@@ -38,7 +50,10 @@ export async function createCardSet(data: Omit<CardSet, 'id' | 'createdAt' | 'up
 export async function getCardSetById(id: number): Promise<CardSet | null> {
   try {
     const cardSet = await prisma.cardSet.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        user: true
+      }
     })
     return cardSet
   } catch (error) {

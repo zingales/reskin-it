@@ -2,11 +2,11 @@ export interface User {
   id: number
   username: string
   email: string
-  displayName?: string
-  bio?: string
-  avatarUrl?: string
-  createdAt: string
-  updatedAt: string
+  displayName: string | null
+  bio: string | null
+  avatarUrl: string | null
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface CardSet {
@@ -17,8 +17,8 @@ export interface CardSet {
   category: string
   userId: number
   user: User
-  createdAt: string
-  updatedAt: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 // For when we need to fetch a user with their card sets

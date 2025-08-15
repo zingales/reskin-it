@@ -1,60 +1,6 @@
-# Reskin It - Card Game Application
+# React + TypeScript + Vite
 
-A full-stack React + TypeScript + Vite application with Express backend and Prisma database.
-
-## 🚀 Quick Start
-
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   cp env.example .env
-   # Edit .env with your configuration
-   ```
-
-3. **Set up the database:**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   npm run seed
-   ```
-
-4. **Run the development server:**
-   ```bash
-   npm run dev:full
-   ```
-
-This will start both the frontend (Vite) and backend (Express) servers concurrently.
-
-## 🔧 Available Scripts
-
-- `npm run dev` - Run only the frontend
-- `npm run server` - Run only the backend  
-- `npm run dev:full` - Run both frontend and backend together
-- `npm run build` - Build for production
-- `npm run seed` - Seed the database with initial data
-
-## 🌍 Environment Variables
-
-Copy `env.example` to `.env` and configure:
-
-- `DATABASE_URL` - Your database connection string
-- `JWT_SECRET` - Secret key for JWT authentication
-
-**Note:** The `.env` file is gitignored for security. For production deployment, set these variables in your hosting platform's environment configuration.
-
-## 🗄️ Database
-
-This project uses Prisma with SQLite for development. For production, consider using PostgreSQL or MySQL.
-
-## 🔒 Security
-
-- JWT tokens are used for authentication
-- Passwords are hashed using bcrypt
-- Environment variables are kept secure and not committed to git
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
 

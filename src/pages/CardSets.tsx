@@ -34,12 +34,12 @@ export default function CardSets() {
       setLoading(true)
       setError(null)
       
-      let url = 'http://localhost:3001/api/cardsets'
+      let url = '/api/cardsets'
       let headers: HeadersInit = {}
       
       // If user is authenticated, fetch their card sets
       if (user) {
-        url = 'http://localhost:3001/api/cardsets/user/me'
+        url = '/api/cardsets/user/me'
         const token = localStorage.getItem('token')
         if (token) {
           headers = {

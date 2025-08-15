@@ -236,6 +236,7 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
           document.removeEventListener('mouseup', handleMouseUp)
         }
       }
+      return undefined
     }, [isDragging, startX, startMin, startMax])
 
     const minPercent = ((minValue - min) / (max - min)) * 100
