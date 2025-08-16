@@ -3,7 +3,6 @@ import {
   Box, 
   Text, 
   Grid,
-  VStack,
 } from '@chakra-ui/react'
 import type { TokenType, TokenEngineDiscoveryCardDefinition } from '../types/CardDefinition'
 
@@ -55,8 +54,8 @@ export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: Disco
     // Apply sorting
     if (sortConfig.key) {
       filtered.sort((a, b) => {
-        let aValue: any
-        let bValue: any
+        let aValue: number | string
+        let bValue: number | string
 
         switch (sortConfig.key) {
           case 'id':
@@ -88,6 +87,8 @@ export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: Disco
             bValue = parseCost(b.cost).BLACK
             break
           default:
+            aValue = 0
+            bValue = 0
             return 0
         }
 
@@ -167,37 +168,37 @@ export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: Disco
       e.preventDefault()
     }
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-      if (!isDragging) return
-
-      const deltaX = e.clientX - startX
-      const sliderWidth = 200 // Approximate slider width
-      const valueChange = Math.round((deltaX / sliderWidth) * (max - min))
-
-      if (isDragging === 'min') {
-        const newMin = Math.max(min, Math.min(maxValue - 1, startMin + valueChange))
-        onMinChange(newMin)
-      } else {
-        const newMax = Math.max(minValue + 1, Math.min(max, startMax + valueChange))
-        onMaxChange(newMax)
-      }
-    }
-
     const handleMouseUp = () => {
       setIsDragging(null)
     }
 
     useEffect(() => {
       if (isDragging) {
-        document.addEventListener('mousemove', handleMouseMove as any)
+        const handleMouseMoveEvent = (e: MouseEvent) => {
+          if (!isDragging) return
+
+          const deltaX = e.clientX - startX
+          const sliderWidth = 200 // Approximate slider width
+          const valueChange = Math.round((deltaX / sliderWidth) * (max - min))
+
+          if (isDragging === 'min') {
+            const newMin = Math.max(min, Math.min(maxValue - 1, startMin + valueChange))
+            onMinChange(newMin)
+          } else {
+            const newMax = Math.max(minValue + 1, Math.min(max, startMax + valueChange))
+            onMaxChange(newMax)
+          }
+        }
+
+        document.addEventListener('mousemove', handleMouseMoveEvent)
         document.addEventListener('mouseup', handleMouseUp)
         return () => {
-          document.removeEventListener('mousemove', handleMouseMove as any)
+          document.removeEventListener('mousemove', handleMouseMoveEvent)
           document.removeEventListener('mouseup', handleMouseUp)
         }
       }
       return undefined
-    }, [isDragging, startX, startMin, startMax])
+    }, [isDragging, startX, startMin, startMax, max, maxValue, min, minValue, onMaxChange, onMinChange])
 
     const minPercent = ((minValue - min) / (max - min)) * 100
     const maxPercent = ((maxValue - min) / (max - min)) * 100

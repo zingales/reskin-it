@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 "use client"
 
 import {
@@ -14,6 +15,7 @@ export const toaster = createToaster({
   pauseOnPageIdle: true,
 })
 
+ 
 export const Toaster = () => {
   return (
     <Portal>

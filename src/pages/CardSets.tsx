@@ -33,44 +33,43 @@ export default function CardSets() {
     document.title = 'Card Sets'
   }, [])
 
-  // Fetch card sets from API
-  const fetchCardSets = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      let url = '/api/cardsets?include=game,user'
-      let headers: HeadersInit = {}
-      
-      // If user is authenticated, fetch their card sets
-      if (user) {
-        url = '/api/cardsets/user/me?include=game,user'
-        const token = localStorage.getItem('token')
-        if (token) {
-          headers = {
-            'Authorization': `Bearer ${token}`
+  useEffect(() => {
+    const fetchCardSets = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        let url = '/api/cardsets?include=game,user'
+        let headers: HeadersInit = {}
+        
+        // If user is authenticated, fetch their card sets
+        if (user) {
+          url = '/api/cardsets/user/me?include=game,user'
+          const token = localStorage.getItem('token')
+          if (token) {
+            headers = {
+              'Authorization': `Bearer ${token}`
+            }
           }
         }
+        
+        const response = await fetch(url, { headers })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        // Type assertion since we know the API includes game data
+        setCardSets(data as CardSetWithGame[])
+      } catch (err) {
+        console.error('Error fetching card sets:', err)
+        setError('Failed to load card sets. Please try again later.')
+      } finally {
+        setLoading(false)
       }
-      
-      const response = await fetch(url, { headers })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      // Type assertion since we know the API includes game data
-      setCardSets(data as CardSetWithGame[])
-    } catch (err) {
-      console.error('Error fetching card sets:', err)
-      setError('Failed to load card sets. Please try again later.')
-    } finally {
-      setLoading(false)
     }
-  }
 
-  useEffect(() => {
     fetchCardSets()
   }, [user])
 
