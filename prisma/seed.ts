@@ -9,7 +9,7 @@ const prisma = new PrismaClient()
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-interface TokenEngineCSVRow {
+interface TokenCardCSVRow {
   tier: string
   points: string
   token: string
@@ -21,22 +21,46 @@ interface TokenEngineCSVRow {
   extra: string
 }
 
-function parseCSV(csvContent: string): TokenEngineCSVRow[] {
+interface DiscoveryCardCSVRow {
+  Points: string
+  White: string
+  Blue: string
+  Green: string
+  Red: string
+  Black: string
+}
+
+function parseTokenCardCSV(csvContent: string): TokenCardCSVRow[] {
   const lines = csvContent.trim().split('\n')
   const headers = lines[0].split(',')
   const rows = lines.slice(1)
   
   return rows.map(line => {
     const values = line.split(',')
-    const row: any = {}
+    const row: Record<string, string> = {}
     headers.forEach((header, index) => {
       row[header.trim()] = values[index]?.trim() || ''
     })
-    return row as TokenEngineCSVRow
+    return row as unknown as TokenCardCSVRow
   })
 }
 
-function createCostObject(row: TokenEngineCSVRow): Record<string, number> {
+function parseDiscoveryCardCSV(csvContent: string): DiscoveryCardCSVRow[] {
+  const lines = csvContent.trim().split('\n')
+  const headers = lines[0].split(',')
+  const rows = lines.slice(1)
+  
+  return rows.map(line => {
+    const values = line.split(',')
+    const row: Record<string, string> = {}
+    headers.forEach((header, index) => {
+      row[header.trim()] = values[index]?.trim() || ''
+    })
+    return row as unknown as DiscoveryCardCSVRow
+  })
+}
+
+function createCostObject(row: TokenCardCSVRow | DiscoveryCardCSVRow): Record<string, number> {
   return {
     WHITE: parseInt(row.White) || 0,
     BLUE: parseInt(row.Blue) || 0,
@@ -50,9 +74,9 @@ async function seedTokenEngineCardDefinitions() {
   console.log('Seeding TokenEngineCardDefinitions from CSV...')
   
   // Read CSV file
-  const csvPath = path.join(__dirname, 'resourceCards.csv')
+  const csvPath = path.join(__dirname, "card_definitions","token_engine","token_cards.csv")
   const csvContent = fs.readFileSync(csvPath, 'utf-8')
-  const csvRows = parseCSV(csvContent)
+  const csvRows = parseTokenCardCSV(csvContent)
   
   // Upsert TokenEngineCardDefinitions from CSV data
   for (const row of csvRows) {
@@ -88,6 +112,42 @@ async function seedTokenEngineCardDefinitions() {
   console.log(`Upserted ${csvRows.length} TokenEngineCardDefinitions from CSV`)
 }
 
+async function seedTokenEngineDiscoveryCardDefinitions() {
+  console.log('Seeding TokenEngineDiscoveryCardDefinitions from CSV...')
+  
+  // Read CSV file
+  const csvPath = path.join(__dirname, "card_definitions","token_engine","discovery_cards.csv")
+  const csvContent = fs.readFileSync(csvPath, 'utf-8')
+  const csvRows = parseDiscoveryCardCSV(csvContent)
+  
+  // Upsert TokenEngineDiscoveryCardDefinitions from CSV data
+  for (const row of csvRows) {
+    const costObject = createCostObject(row)
+    const points = parseInt(row['Points'] || '0')
+    const cost = JSON.stringify(costObject)
+    
+    // Check if exact record exists (same points AND cost)
+    const existing = await prisma.tokenEngineDiscoveryCardDefinition.findFirst({
+      where: {
+        points,
+        cost,
+      }
+    })
+
+    if (!existing) {
+      // Create new record only if it doesn't exist
+      await prisma.tokenEngineDiscoveryCardDefinition.create({
+        data: {
+          points,
+          cost,
+        }
+      })
+    }
+  }
+  
+  console.log(`Upserted ${csvRows.length} TokenEngineDiscoveryCardDefinitions from CSV`)
+}
+
 async function main() {
   console.log('Starting database seeding with upserts...')
 
@@ -121,7 +181,7 @@ async function main() {
   - Each player starts with 3 tokens of each color
   - Shuffle the card deck and deal 4 cards to each player
   - Setup the field, by having a row for each tier (3 in total) and flipping over 4 cards for each tier. 
-  - Also flip over 4 club cards. 
+  - Also flip over 4 Discovery cards. 
   ## Gameplay
   On your turn, you may either:
     - Take 3 tokens of different colors
@@ -131,12 +191,12 @@ async function main() {
   
   If you purchase a card, place it in front of you
     - you may purchase a card from the field infront of you. That is less than your tokens + your token cards. 
-    - if purchasing this card gets allows you to achieve the requirements of club, you get it for free. However, you can only get one per turn. 
+    - if purchasing this card gets allows you to achieve the requirements of the Discvoery card, you get it. However, you can only get one per turn. 
     - once you have purchased a card, flip another card over from the deck of the equivalent tier.
 
 
   ## Victory
-  Once a player reaches 15 points, everyone else gets 1 more turn. And the player with the most points wins! Summing points from their token and club cards.
+  Once a player reaches 15 points, everyone else gets 1 more turn. And the player with the most points wins! Summing points from their token and discovery cards.
   `
   // First, ensure the TokenEngine game exists
   const tokenEngineGame = await prisma.game.upsert({
@@ -179,6 +239,32 @@ async function main() {
   })
 
   console.log('✅ TokenEngine card definition table upserted')
+
+  // Create GameCardDefinition for TokenEngine Discovery Cards
+  const tokenEngineDiscoveryCardDefinitionDescription = 'Discovery cards that provide victory points when enough token cards are met'
+  const tokenEngineDiscoveryCardDefinitionTableName = 'TokenEngineDiscoveryCardDefinition'
+  const tokenEngineDiscoveryCardDefinitionName = 'Discovery Cards'
+
+  await prisma.gameCardDefinition.upsert({
+    where: {
+      gameId_name: {
+        gameId: tokenEngineGame.id,
+        name: tokenEngineDiscoveryCardDefinitionName
+      }
+    },
+    update: {
+      description: tokenEngineDiscoveryCardDefinitionDescription,
+      tableName: tokenEngineDiscoveryCardDefinitionTableName
+    },
+    create: {
+      gameId: tokenEngineGame.id,
+      name: tokenEngineDiscoveryCardDefinitionName,
+      description: tokenEngineDiscoveryCardDefinitionDescription,
+      tableName: tokenEngineDiscoveryCardDefinitionTableName
+    }
+  })
+
+  console.log('✅ TokenEngine discovery card definition table upserted')
 
   // Seed with initial CardSet data using upserts
   const cardSets = [
@@ -245,6 +331,7 @@ async function main() {
 
   // Seed TokenEngineCardDefinitions from CSV
   await seedTokenEngineCardDefinitions()
+  await seedTokenEngineDiscoveryCardDefinitions()
 
   console.log('✅ Database seeding completed successfully!')
 }

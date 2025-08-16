@@ -23,3 +23,9 @@ export interface TokenEngineCardDefinition extends CardDefinition {
   tier: number
   cost: Map<TokenType, number>
 }
+
+// TokenEngineDiscoveryCardDefinition type for discovery cards
+export interface TokenEngineDiscoveryCardDefinition extends CardDefinition {
+  points: number
+  cost: Map<TokenType, number>
+}

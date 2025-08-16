@@ -14,11 +14,12 @@ import {
 } from '@chakra-ui/react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import CardDefinitionViewer from '../components/CardDefinitionViewer'
+import DiscoveryCardDefinitionViewer from '../components/DiscoveryCardDefinitionViewer'
 import type { Game } from '../types/Game'
-import type { TokenEngineCardDefinition } from '../types/CardDefinition'
+import type { TokenEngineCardDefinition, TokenEngineDiscoveryCardDefinition } from '../types/CardDefinition'
 
 interface CardDefinitionData {
-  [tableName: string]: TokenEngineCardDefinition[]
+  [tableName: string]: TokenEngineCardDefinition[] | TokenEngineDiscoveryCardDefinition[]
 }
 
 export default function GameView() {
@@ -61,6 +62,12 @@ export default function GameView() {
           try {
             // For now, we only handle TokenEngineCardDefinition
             if (cardDefTable.tableName === 'TokenEngineCardDefinition') {
+              const cardsResponse = await fetch(`/api/card-definitions/${cardDefTable.tableName}`)
+              if (cardsResponse.ok) {
+                const cardsData = await cardsResponse.json()
+                cardDefData[cardDefTable.tableName] = cardsData
+              }
+            } else if (cardDefTable.tableName === 'TokenEngineDiscoveryCardDefinition') {
               const cardsResponse = await fetch(`/api/card-definitions/${cardDefTable.tableName}`)
               if (cardsResponse.ok) {
                 const cardsData = await cardsResponse.json()
@@ -291,7 +298,11 @@ export default function GameView() {
                           borderColor="gray.200"
                           borderRadius="md"
                         >
-                          <CardDefinitionViewer cardDefinitions={cards} />
+                          {selectedCardDefTable.tableName === 'TokenEngineDiscoveryCardDefinition' ? (
+                            <DiscoveryCardDefinitionViewer cardDefinitions={cards as TokenEngineDiscoveryCardDefinition[]} />
+                          ) : (
+                            <CardDefinitionViewer cardDefinitions={cards as TokenEngineCardDefinition[]} />
+                          )}
                         </Box>
                       ) : (
                         <Center py={12}>

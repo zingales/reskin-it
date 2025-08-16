@@ -363,6 +363,22 @@ app.get('/api/card-definitions/:tableName', async (req: any, res: any) => {
         
         return res.json(transformedTokenEngineCards)
       }
+      
+      case 'TokenEngineDiscoveryCardDefinition': {
+        const discoveryCards = await prisma.tokenEngineDiscoveryCardDefinition.findMany({
+          orderBy: [
+            { points: 'desc' }
+          ]
+        })
+        
+        // Transform the cost from JSON string to Map-like object
+        const transformedDiscoveryCards = discoveryCards.map((card: typeof discoveryCards[0]) => ({
+          ...card,
+          cost: card.cost // Keep as string, will be parsed on frontend
+        }))
+        
+        return res.json(transformedDiscoveryCards)
+      }
         
       // Future: Add support for other card definition tables
       // case 'SplendorDevelopmentCardDefinition':
