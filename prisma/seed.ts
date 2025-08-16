@@ -112,25 +112,31 @@ async function main() {
 
   console.log('✅ System default user upserted')
 
-  const tokenEngineGameSummary = 'A Engine Game where you use tokens to get resources which generate more tokens. Game with similar rules: Splendor'
+  const tokenEngineGameSummary = 'A Engine Game where you use tokens to get token cards which give you discount on a token type and get you points.  Game with similar rules: Splendor'
   const tokenEngineGameRules = `
   # TokenEngine Rules
   ## Overview
-  TokenEngine is an engine-building game where players use tokens to acquire resources that generate more tokens.
+  TokenEngine is an engine-building game where players use tokens to acquire resources that generate more tokens and get you points. The first player to get 15 points wins!
   ## Setup
   - Each player starts with 3 tokens of each color
   - Shuffle the card deck and deal 4 cards to each player
+  - Setup the field, by having a row for each tier (3 in total) and flipping over 4 cards for each tier. 
+  - Also flip over 4 club cards. 
   ## Gameplay
-  1. On your turn, you may either:
+  On your turn, you may either:
     - Take 3 tokens of different colors
-    - Take 2 tokens of the same color (if available)
+    - Take 2 tokens of the same color, if there are 4 or more tokens of that color.
     - Purchase a card using your tokens
-  2. When you purchase a card, place it in front of you
-  3. Cards provide ongoing benefits and victory points
+    - Reserve a card for later purchase _and_ get a "wild" token.
+  
+  If you purchase a card, place it in front of you
+    - you may purchase a card from the field infront of you. That is less than your tokens + your token cards. 
+    - if purchasing this card gets allows you to achieve the requirements of club, you get it for free. However, you can only get one per turn. 
+    - once you have purchased a card, flip another card over from the deck of the equivalent tier.
+
 
   ## Victory
-  - The game ends when a player reaches 15 victory points
-  - The player with the most points wins!
+  Once a player reaches 15 points, everyone else gets 1 more turn. And the player with the most points wins! Summing points from their token and club cards.
   `
   // First, ensure the TokenEngine game exists
   const tokenEngineGame = await prisma.game.upsert({
@@ -152,7 +158,7 @@ async function main() {
   const tokenEngineCardDefinitionDescription = 'Cards that can be purchased with tokens to build your engine'
   const tokenEngineCardDefinitionTableName = 'TokenEngineCardDefinition'
   const tokenEngineCardDefinitionName = 'Token Cards'
-  
+
   await prisma.gameCardDefinition.upsert({
     where: {
       gameId_name: {

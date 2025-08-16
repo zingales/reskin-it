@@ -99,19 +99,19 @@ export default function GameView() {
       const trimmedLine = line.trim()
       
       if (trimmedLine.startsWith('# ')) {
-        return <Heading key={index} size="lg" mt={6} mb={3} color="gray.800">{trimmedLine.substring(2)}</Heading>
+        return <Heading key={index} size="lg" mt={6} mb={3} color="gray.800" textAlign="center">{trimmedLine.substring(2)}</Heading>
       } else if (trimmedLine.startsWith('## ')) {
-        return <Heading key={index} size="md" mt={4} mb={2} color="gray.700">{trimmedLine.substring(3)}</Heading>
+        return <Heading key={index} size="md" mt={4} mb={2} color="gray.700" textAlign="center">{trimmedLine.substring(3)}</Heading>
       } else if (trimmedLine.startsWith('### ')) {
-        return <Heading key={index} size="sm" mt={3} mb={2} color="gray.600">{trimmedLine.substring(4)}</Heading>
+        return <Heading key={index} size="sm" mt={3} mb={2} color="gray.600" textAlign="center">{trimmedLine.substring(4)}</Heading>
       } else if (trimmedLine.startsWith('- ')) {
-        return <Text key={index} ml={4} color="gray.600">• {trimmedLine.substring(2)}</Text>
+        return <Text key={index} color="gray.600" textAlign="left">• {trimmedLine.substring(2)}</Text>
       } else if (trimmedLine.startsWith('1. ')) {
-        return <Text key={index} ml={4} color="gray.600">{trimmedLine}</Text>
+        return <Text key={index} color="gray.600" textAlign="left">{trimmedLine}</Text>
       } else if (trimmedLine === '') {
         return <Box key={index} h={2} />
       } else {
-        return <Text key={index} color="gray.600" lineHeight="tall">{trimmedLine}</Text>
+        return <Text key={index} color="gray.600" lineHeight="tall" textAlign="left">{trimmedLine}</Text>
       }
     })
   }
