@@ -52,6 +52,7 @@ model GameCardDefinition {
   name        String   // e.g., "Noble Cards", "Development Cards", "Resource Cards"
   description String   // Description of what this card type does
   tableName   String   // Reference to the actual table (e.g., "TokenEngineCardDefinition")
+  decks       Deck[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -67,10 +68,26 @@ model CardSet {
   game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   userId      Int
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decks       Deck[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@unique([title, userId])
+}
+
+model Deck {
+  id                    Int                @id @default(autoincrement())
+  name                  String
+  description           String?
+  cardSetId             Int
+  cardSet               CardSet            @relation(fields: [cardSetId], references: [id], onDelete: Cascade)
+  gameCardDefinitionId  Int
+  gameCardDefinition    GameCardDefinition @relation(fields: [gameCardDefinitionId], references: [id], onDelete: Cascade)
+  cardDefinitionIds     Int[]              // Array of row IDs from the specific card definition table
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@unique([name, cardSetId])
 }
 
 model TokenEngineCardDefinition {

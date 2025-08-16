@@ -1,4 +1,5 @@
 import type { Game } from './Game'
+import type { Deck } from './Deck'
 
 export interface User {
   id: number
@@ -20,6 +21,7 @@ export interface CardSet {
   game?: Game // Optional relation
   userId: number
   user: User
+  decks?: Deck[] // Optional relation
   createdAt: Date
   updatedAt: Date
 }
