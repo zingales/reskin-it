@@ -25,6 +25,9 @@ if (process.env.NODE_ENV === 'production') {
 async function getAllGames() {
   try {
     const games = await prisma.game.findMany({
+      include: {
+        cardDefinitionTables: true
+      },
       orderBy: {
         name: 'asc'
       }
@@ -39,11 +42,49 @@ async function getAllGames() {
 async function getGameById(id: number) {
   try {
     const game = await prisma.game.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        cardDefinitionTables: true
+      }
     })
     return game
   } catch (error) {
     console.error('Error fetching game:', error)
+    throw error
+  }
+}
+
+async function getAllGameCardDefinitions() {
+  try {
+    const gameCardDefinitions = await prisma.gameCardDefinition.findMany({
+      include: {
+        game: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+    return gameCardDefinitions
+  } catch (error) {
+    console.error('Error fetching game card definitions:', error)
+    throw error
+  }
+}
+
+async function getGameCardDefinitionsByGameId(gameId: number) {
+  try {
+    const gameCardDefinitions = await prisma.gameCardDefinition.findMany({
+      where: { gameId },
+      include: {
+        game: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+    return gameCardDefinitions
+  } catch (error) {
+    console.error('Error fetching game card definitions:', error)
     throw error
   }
 }
@@ -178,6 +219,29 @@ app.get('/api/games/:id', async (req: any, res: any) => {
   }
 })
 
+// Get all game card definitions
+app.get('/api/game-card-definitions', async (_req: any, res: any) => {
+  try {
+    const gameCardDefinitions = await getAllGameCardDefinitions()
+    res.json(gameCardDefinitions)
+  } catch (error) {
+    console.error('Error fetching game card definitions:', error)
+    res.status(500).json({ error: 'Failed to fetch game card definitions' })
+  }
+})
+
+// Get game card definitions by game ID
+app.get('/api/games/:gameId/card-definitions', async (req: any, res: any) => {
+  try {
+    const gameId = parseInt(req.params.gameId, 10)
+    const gameCardDefinitions = await getGameCardDefinitionsByGameId(gameId)
+    res.json(gameCardDefinitions)
+  } catch (error) {
+    console.error('Error fetching game card definitions:', error)
+    res.status(500).json({ error: 'Failed to fetch game card definitions' })
+  }
+})
+
 app.get('/api/cardsets', async (req: any, res: any) => {
   try {
     // Parse include parameter: ?include=game,user or ?include=game
@@ -275,24 +339,52 @@ app.post('/api/cardsets', authenticateToken, async (req: any, res: any) => {
   }
 })
 
-// Card Definitions endpoint
-app.get('/api/card-definitions', async (_req: any, res: any) => {
+// Card Definitions endpoint - accepts table name as parameter
+app.get('/api/card-definitions/:tableName', async (req: any, res: any) => {
   try {
-    const cardDefinitions = await prisma.tokenEngineCardDefinition.findMany({
-      orderBy: [
-        { tier: 'asc' },
-        { points: 'desc' },
-        { token: 'asc' }
-      ]
-    })
+    const { tableName } = req.params
     
-    // Transform the cost from JSON string to Map-like object
-    const transformedDefinitions = cardDefinitions.map((card: typeof cardDefinitions[0]) => ({
-      ...card,
-      cost: card.cost // Keep as string, will be parsed on frontend
-    }))
-    
-    return res.json(transformedDefinitions)
+    // Route to appropriate table based on tableName
+    switch (tableName) {
+      case 'TokenEngineCardDefinition': {
+        const tokenEngineCards = await prisma.tokenEngineCardDefinition.findMany({
+          orderBy: [
+            { tier: 'asc' },
+            { points: 'desc' },
+            { token: 'asc' }
+          ]
+        })
+        
+        // Transform the cost from JSON string to Map-like object
+        const transformedTokenEngineCards = tokenEngineCards.map((card: typeof tokenEngineCards[0]) => ({
+          ...card,
+          cost: card.cost // Keep as string, will be parsed on frontend
+        }))
+        
+        return res.json(transformedTokenEngineCards)
+      }
+        
+      // Future: Add support for other card definition tables
+      // case 'SplendorDevelopmentCardDefinition':
+      //   const splendorCards = await prisma.splendorDevelopmentCardDefinition.findMany({
+      //     orderBy: [
+      //       { tier: 'asc' },
+      //       { points: 'desc' }
+      //     ]
+      //   })
+      //   return res.json(splendorCards)
+      
+      // case 'SplendorNobleCardDefinition':
+      //   const nobleCards = await prisma.splendorNobleCardDefinition.findMany({
+      //     orderBy: [
+      //       { points: 'desc' }
+      //     ]
+      //   })
+      //   return res.json(nobleCards)
+      
+      default:
+        return res.status(404).json({ error: `Card definition table '${tableName}' not found` })
+    }
   } catch (error) {
     console.error('Error fetching card definitions:', error)
     return res.status(500).json({ error: 'Failed to fetch card definitions' })

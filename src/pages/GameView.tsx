@@ -17,12 +17,16 @@ import CardDefinitionViewer from '../components/CardDefinitionViewer'
 import type { Game } from '../types/Game'
 import type { TokenEngineCardDefinition } from '../types/CardDefinition'
 
+interface CardDefinitionData {
+  [tableName: string]: TokenEngineCardDefinition[]
+}
+
 export default function GameView() {
   const [game, setGame] = useState<Game | null>(null)
-  const [cardDefinitions, setCardDefinitions] = useState<TokenEngineCardDefinition[]>([])
+  const [cardDefinitions, setCardDefinitions] = useState<CardDefinitionData>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState<'rules' | 'cards'>('rules')
+  const [activeSection, setActiveSection] = useState<'rules' | string>('rules')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -50,14 +54,33 @@ export default function GameView() {
         const gameData = await gameResponse.json()
         setGame(gameData)
         
-        // Fetch card definitions if this game has them
-        if (gameData.cardDefinitionTable === 'TokenEngineCardDefinition') {
-          const cardsResponse = await fetch('/api/card-definitions')
-          if (cardsResponse.ok) {
-            const cardsData = await cardsResponse.json()
-            setCardDefinitions(cardsData)
+        // Fetch card definitions for each card definition table
+        const cardDefData: CardDefinitionData = {}
+        
+        for (const cardDefTable of gameData.cardDefinitionTables || []) {
+          try {
+            // For now, we only handle TokenEngineCardDefinition
+            if (cardDefTable.tableName === 'TokenEngineCardDefinition') {
+              const cardsResponse = await fetch(`/api/card-definitions/${cardDefTable.tableName}`)
+              if (cardsResponse.ok) {
+                const cardsData = await cardsResponse.json()
+                cardDefData[cardDefTable.tableName] = cardsData
+              }
+            }
+            // Future: Add support for other card definition tables
+            // else if (cardDefTable.tableName === 'SplendorDevelopmentCardDefinition') {
+            //   const cardsResponse = await fetch('/api/splendor-development-cards')
+            //   if (cardsResponse.ok) {
+            //     const cardsData = await cardsResponse.json()
+            //     cardDefData[cardDefTable.tableName] = cardsData
+            //   }
+            // }
+          } catch (err) {
+            console.error(`Error fetching card definitions for ${cardDefTable.tableName}:`, err)
           }
         }
+        
+        setCardDefinitions(cardDefData)
       } catch (err) {
         console.error('Error fetching game data:', err)
         setError('Failed to load game data. Please try again later.')
@@ -73,20 +96,22 @@ export default function GameView() {
     // Simple markdown rendering for headers and lists
     const lines = rules.split('\n')
     return lines.map((line, index) => {
-      if (line.startsWith('# ')) {
-        return <Heading key={index} size="lg" mt={6} mb={3} color="gray.800">{line.substring(2)}</Heading>
-      } else if (line.startsWith('## ')) {
-        return <Heading key={index} size="md" mt={4} mb={2} color="gray.700">{line.substring(3)}</Heading>
-      } else if (line.startsWith('### ')) {
-        return <Heading key={index} size="sm" mt={3} mb={2} color="gray.600">{line.substring(4)}</Heading>
-      } else if (line.startsWith('- ')) {
-        return <Text key={index} ml={4} color="gray.600">• {line.substring(2)}</Text>
-      } else if (line.startsWith('1. ')) {
-        return <Text key={index} ml={4} color="gray.600">{line}</Text>
-      } else if (line.trim() === '') {
+      const trimmedLine = line.trim()
+      
+      if (trimmedLine.startsWith('# ')) {
+        return <Heading key={index} size="lg" mt={6} mb={3} color="gray.800">{trimmedLine.substring(2)}</Heading>
+      } else if (trimmedLine.startsWith('## ')) {
+        return <Heading key={index} size="md" mt={4} mb={2} color="gray.700">{trimmedLine.substring(3)}</Heading>
+      } else if (trimmedLine.startsWith('### ')) {
+        return <Heading key={index} size="sm" mt={3} mb={2} color="gray.600">{trimmedLine.substring(4)}</Heading>
+      } else if (trimmedLine.startsWith('- ')) {
+        return <Text key={index} ml={4} color="gray.600">• {trimmedLine.substring(2)}</Text>
+      } else if (trimmedLine.startsWith('1. ')) {
+        return <Text key={index} ml={4} color="gray.600">{trimmedLine}</Text>
+      } else if (trimmedLine === '') {
         return <Box key={index} h={2} />
       } else {
-        return <Text key={index} color="gray.600" lineHeight="tall">{line}</Text>
+        return <Text key={index} color="gray.600" lineHeight="tall">{trimmedLine}</Text>
       }
     })
   }
@@ -183,21 +208,31 @@ export default function GameView() {
               >
                 📖 Rules
               </Button>
-              <Button
-                variant={activeSection === 'cards' ? 'solid' : 'ghost'}
-                colorScheme="blue"
-                justifyContent="start"
-                onClick={() => setActiveSection('cards')}
-                size="lg"
-                disabled={cardDefinitions.length === 0}
-              >
-                🃏 Card Definitions
-                {cardDefinitions.length > 0 && (
-                  <Badge ml={2} colorScheme="green" borderRadius="full">
-                    {cardDefinitions.length}
-                  </Badge>
-                )}
-              </Button>
+              
+              {/* Card Definition Tables */}
+              {game.cardDefinitionTables?.map((cardDefTable) => {
+                const cards = cardDefinitions[cardDefTable.tableName] || []
+                const hasCards = cards.length > 0
+                
+                return (
+                  <Button
+                    key={cardDefTable.id}
+                    variant={activeSection === cardDefTable.tableName ? 'solid' : 'ghost'}
+                    colorScheme="blue"
+                    justifyContent="start"
+                    onClick={() => setActiveSection(cardDefTable.tableName)}
+                    size="lg"
+                    disabled={!hasCards}
+                  >
+                    🃏 {cardDefTable.name}
+                    {hasCards && (
+                      <Badge ml={2} colorScheme="green" borderRadius="full">
+                        {cards.length}
+                      </Badge>
+                    )}
+                  </Button>
+                )
+              })}
             </VStack>
           </Box>
 
@@ -220,31 +255,59 @@ export default function GameView() {
               </Box>
             ) : (
               <Box>
-                <Heading size="lg" mb={6} color="gray.800">
-                  Card Definitions
-                </Heading>
-                {cardDefinitions.length > 0 ? (
-                  <Box 
-                    maxH="70vh" 
-                    overflowY="auto"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                  >
-                    <CardDefinitionViewer cardDefinitions={cardDefinitions} />
-                  </Box>
-                ) : (
-                  <Center py={12}>
-                    <VStack gap={4}>
-                      <Text color="gray.500" fontSize="lg">
-                        No card definitions available for this game.
+                {(() => {
+                  const selectedCardDefTable = game.cardDefinitionTables?.find(
+                    table => table.tableName === activeSection
+                  )
+                  
+                  if (!selectedCardDefTable) {
+                    return (
+                      <Center py={12}>
+                        <VStack gap={4}>
+                          <Text color="gray.500" fontSize="lg">
+                            Card definition table not found.
+                          </Text>
+                        </VStack>
+                      </Center>
+                    )
+                  }
+                  
+                  const cards = cardDefinitions[selectedCardDefTable.tableName] || []
+                  
+                  return (
+                    <Box>
+                      <Heading size="lg" mb={6} color="gray.800">
+                        {selectedCardDefTable.name}
+                      </Heading>
+                      <Text color="gray.600" mb={6} fontSize="md">
+                        {selectedCardDefTable.description}
                       </Text>
-                      <Text color="gray.400" fontSize="md">
-                        Card definitions will be added soon!
-                      </Text>
-                    </VStack>
-                  </Center>
-                )}
+                      
+                      {cards.length > 0 ? (
+                        <Box 
+                          maxH="70vh" 
+                          overflowY="auto"
+                          border="1px solid"
+                          borderColor="gray.200"
+                          borderRadius="md"
+                        >
+                          <CardDefinitionViewer cardDefinitions={cards} />
+                        </Box>
+                      ) : (
+                        <Center py={12}>
+                          <VStack gap={4}>
+                            <Text color="gray.500" fontSize="lg">
+                              No cards available for {selectedCardDefTable.name}.
+                            </Text>
+                            <Text color="gray.400" fontSize="md">
+                              Cards will be added soon!
+                            </Text>
+                          </VStack>
+                        </Center>
+                      )}
+                    </Box>
+                  )
+                })()}
               </Box>
             )}
           </Box>

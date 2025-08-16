@@ -112,23 +112,67 @@ async function main() {
 
   console.log('✅ System default user upserted')
 
+  const tokenEngineGameSummary = 'A Engine Game where you use tokens to get resources which generate more tokens. Game with similar rules: Splendor'
+  const tokenEngineGameRules = `
+  # TokenEngine Rules
+  ## Overview
+  TokenEngine is an engine-building game where players use tokens to acquire resources that generate more tokens.
+  ## Setup
+  - Each player starts with 3 tokens of each color
+  - Shuffle the card deck and deal 4 cards to each player
+  ## Gameplay
+  1. On your turn, you may either:
+    - Take 3 tokens of different colors
+    - Take 2 tokens of the same color (if available)
+    - Purchase a card using your tokens
+  2. When you purchase a card, place it in front of you
+  3. Cards provide ongoing benefits and victory points
+
+  ## Victory
+  - The game ends when a player reaches 15 victory points
+  - The player with the most points wins!
+  `
   // First, ensure the TokenEngine game exists
   const tokenEngineGame = await prisma.game.upsert({
     where: { name: 'TokenEngine' },
     update: {
-      summary: 'A Engine Game where you use tokens to get resources which generate more tokens. Game with similar rules: Splendor',
-      rules: '# TokenEngine Rules\n\n## Overview\nTokenEngine is an engine-building game where players use tokens to acquire resources that generate more tokens.\n\n## Setup\n- Each player starts with 3 tokens of each color\n- Shuffle the card deck and deal 4 cards to each player\n\n## Gameplay\n1. On your turn, you may either:\n   - Take 3 tokens of different colors\n   - Take 2 tokens of the same color (if available)\n   - Purchase a card using your tokens\n\n2. When you purchase a card, place it in front of you\n3. Cards provide ongoing benefits and victory points\n\n## Victory\n- The game ends when a player reaches 15 victory points\n- The player with the most points wins!',
-      cardDefinitionTable: 'TokenEngineCardDefinition'
+      summary: tokenEngineGameSummary,
+      rules: tokenEngineGameRules
     },
     create: {
       name: 'TokenEngine',
-      summary: 'A Engine Game where you use tokens to get resources which generate more tokens. Game with similar rules: Splendor',
-      rules: '# TokenEngine Rules\n\n## Overview\nTokenEngine is an engine-building game where players use tokens to acquire resources that generate more tokens.\n\n## Setup\n- Each player starts with 3 tokens of each color\n- Shuffle the card deck and deal 4 cards to each player\n\n## Gameplay\n1. On your turn, you may either:\n   - Take 3 tokens of different colors\n   - Take 2 tokens of the same color (if available)\n   - Purchase a card using your tokens\n\n2. When you purchase a card, place it in front of you\n3. Cards provide ongoing benefits and victory points\n\n## Victory\n- The game ends when a player reaches 15 victory points\n- The player with the most points wins!',
-      cardDefinitionTable: 'TokenEngineCardDefinition'
+      summary: tokenEngineGameSummary,
+      rules: tokenEngineGameRules
     }
   })
 
   console.log('✅ TokenEngine game upserted')
+
+  // Create GameCardDefinition for TokenEngine
+  const tokenEngineCardDefinitionDescription = 'Cards that can be purchased with tokens to build your engine'
+  const tokenEngineCardDefinitionTableName = 'TokenEngineCardDefinition'
+  const tokenEngineCardDefinitionName = 'Token Cards'
+  
+  await prisma.gameCardDefinition.upsert({
+    where: {
+      gameId_name: {
+        gameId: tokenEngineGame.id,
+        name: tokenEngineCardDefinitionName
+      }
+    },
+    update: {
+      description: tokenEngineCardDefinitionDescription,
+      tableName: tokenEngineCardDefinitionTableName
+    },
+    create: {
+      gameId: tokenEngineGame.id,
+      name: tokenEngineCardDefinitionName,
+      description: tokenEngineCardDefinitionDescription,
+      tableName: tokenEngineCardDefinitionTableName
+    }
+  })
+
+  console.log('✅ TokenEngine card definition table upserted')
 
   // Seed with initial CardSet data using upserts
   const cardSets = [

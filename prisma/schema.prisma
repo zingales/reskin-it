@@ -35,14 +35,27 @@ model User {
 }
 
 model Game {
-  id                  Int       @id @default(autoincrement())
-  name                String    @unique
-  summary             String
-  rules               String    // Markdown content
-  cardDefinitionTable String    // Reference to the table containing card definitions
-  cardSets            CardSet[] // Relation field (not loaded by default)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                    Int                    @id @default(autoincrement())
+  name                  String                 @unique
+  summary               String
+  rules                 String                 // Markdown content
+  cardDefinitionTables  GameCardDefinition[]   // Multiple card definition tables
+  cardSets              CardSet[]              // Relation field (not loaded by default)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+}
+
+model GameCardDefinition {
+  id          Int      @id @default(autoincrement())
+  gameId      Int
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  name        String   // e.g., "Noble Cards", "Development Cards", "Resource Cards"
+  description String   // Description of what this card type does
+  tableName   String   // Reference to the actual table (e.g., "TokenEngineCardDefinition")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([gameId, name])
 }
 
 model CardSet {
