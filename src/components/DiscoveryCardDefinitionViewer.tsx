@@ -122,7 +122,7 @@ export default function DiscoveryCardDefinitionViewer({
     }
 
     setFilteredCards(filtered)
-  }, [cardDefinitions, filters, sortConfig])
+  }, [cardDefinitions, filters, sortConfig, allowSelection, selectedCardIds])
 
   const parseCost = (cost: string | Map<TokenType, number>): Record<TokenType, number> => {
     if (typeof cost === 'string') {

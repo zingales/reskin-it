@@ -318,7 +318,7 @@ async function main() {
   })
 
   // Create Discovery Cards deck (all discovery cards)
-  const discoveryCardsDeck = await prisma.deck.upsert({
+  await prisma.deck.upsert({
     where: {
       name_cardSetId: {
         name: "Discovery Cards",
@@ -341,7 +341,7 @@ async function main() {
 
   // Create Tier 1 Token Cards deck
   const tier1TokenCards = tokenCards.filter(card => card.tier === 1)
-  const tier1Deck = await prisma.deck.upsert({
+  await prisma.deck.upsert({
     where: {
       name_cardSetId: {
         name: "Tier 1 Token Cards",
@@ -364,7 +364,7 @@ async function main() {
 
   // Create Tier 2 Token Cards deck
   const tier2TokenCards = tokenCards.filter(card => card.tier === 2)
-  const tier2Deck = await prisma.deck.upsert({
+  await prisma.deck.upsert({
     where: {
       name_cardSetId: {
         name: "Tier 2 Token Cards",
@@ -387,7 +387,7 @@ async function main() {
 
   // Create Tier 3 Token Cards deck
   const tier3TokenCards = tokenCards.filter(card => card.tier === 3)
-  const tier3Deck = await prisma.deck.upsert({
+  await prisma.deck.upsert({
     where: {
       name_cardSetId: {
         name: "Tier 3 Token Cards",

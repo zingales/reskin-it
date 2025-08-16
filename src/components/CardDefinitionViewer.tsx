@@ -143,7 +143,7 @@ export default function TokenEngineCardDefinitionViewer({
     }
 
     setFilteredCards(filtered)
-  }, [cardDefinitions, filters, sortConfig])
+  }, [cardDefinitions, filters, sortConfig, allowSelection, selectedCardIds])
 
   const getTokenColorScheme = (token: TokenType) => {
     const colors = {
