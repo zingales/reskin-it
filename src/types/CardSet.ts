@@ -1,3 +1,5 @@
+import type { Game } from './Game'
+
 export interface User {
   id: number
   username: string
@@ -14,7 +16,8 @@ export interface CardSet {
   title: string
   description: string
   imageUrl: string
-  category: string
+  gameId: number
+  game?: Game // Optional relation
   userId: number
   user: User
   createdAt: Date

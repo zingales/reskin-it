@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config()
+
 const express = require('express')
 const cors = require('cors')
 const bcrypt = require('bcryptjs')
@@ -19,11 +22,38 @@ if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient()
 }
 
+async function getAllGames() {
+  try {
+    const games = await prisma.game.findMany({
+      orderBy: {
+        name: 'asc'
+      }
+    })
+    return games
+  } catch (error) {
+    console.error('Error fetching games:', error)
+    throw error
+  }
+}
+
+async function getGameById(id: number) {
+  try {
+    const game = await prisma.game.findUnique({
+      where: { id }
+    })
+    return game
+  } catch (error) {
+    console.error('Error fetching game:', error)
+    throw error
+  }
+}
+
 async function getAllCardSets() {
   try {
     const cardSets = await prisma.cardSet.findMany({
       include: {
-        user: true
+        user: true,
+        game: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -43,11 +73,12 @@ async function createCardSet(data: any) {
         title: data.title,
         description: data.description,
         imageUrl: data.imageUrl,
-        category: data.category,
+        gameId: data.gameId,
         userId: data.userId
       },
       include: {
-        user: true
+        user: true,
+        game: true
       }
     })
     return cardSet
@@ -62,7 +93,8 @@ async function getCardSetById(id: number) {
     const cardSet = await prisma.cardSet.findUnique({
       where: { id },
       include: {
-        user: true
+        user: true,
+        game: true
       }
     })
     return cardSet
@@ -107,6 +139,32 @@ const authenticateToken = (req: any, res: any, next: any) => {
 }
 
 // Routes
+app.get('/api/games', async (_req: any, res: any) => {
+  try {
+    const games = await getAllGames()
+    res.json(games)
+  } catch (error) {
+    console.error('Error fetching games:', error)
+    res.status(500).json({ error: 'Failed to fetch games' })
+  }
+})
+
+app.get('/api/games/:id', async (req: any, res: any) => {
+  try {
+    const id = parseInt(req.params.id)
+    const game = await getGameById(id)
+    
+    if (!game) {
+      return res.status(404).json({ error: 'Game not found' })
+    }
+    
+    return res.json(game)
+  } catch (error) {
+    console.error('Error fetching game:', error)
+    return res.status(500).json({ error: 'Failed to fetch game' })
+  }
+})
+
 app.get('/api/cardsets', async (_req: any, res: any) => {
   try {
     const cardSets = await getAllCardSets()
@@ -166,9 +224,9 @@ app.get('/api/cardsets/:id', async (req: any, res: any) => {
 
 app.post('/api/cardsets', authenticateToken, async (req: any, res: any) => {
   try {
-    const { title, description, imageUrl, category } = req.body
+    const { title, description, imageUrl, gameId } = req.body
     
-    if (!title || !description || !imageUrl || !category) {
+    if (!title || !description || !imageUrl || !gameId) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
@@ -178,7 +236,7 @@ app.post('/api/cardsets', authenticateToken, async (req: any, res: any) => {
       title,
       description,
       imageUrl,
-      category,
+      gameId,
       userId
     })
 

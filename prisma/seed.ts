@@ -112,43 +112,61 @@ async function main() {
 
   console.log('✅ System default user upserted')
 
+  // First, ensure the TokenEngine game exists
+  const tokenEngineGame = await prisma.game.upsert({
+    where: { name: 'TokenEngine' },
+    update: {
+      summary: 'A Engine Game where you use tokens to get resources which generate more tokens. Game with similar rules: Splendor',
+      rules: '# TokenEngine Rules\n\n## Overview\nTokenEngine is an engine-building game where players use tokens to acquire resources that generate more tokens.\n\n## Setup\n- Each player starts with 3 tokens of each color\n- Shuffle the card deck and deal 4 cards to each player\n\n## Gameplay\n1. On your turn, you may either:\n   - Take 3 tokens of different colors\n   - Take 2 tokens of the same color (if available)\n   - Purchase a card using your tokens\n\n2. When you purchase a card, place it in front of you\n3. Cards provide ongoing benefits and victory points\n\n## Victory\n- The game ends when a player reaches 15 victory points\n- The player with the most points wins!',
+      cardDefinitionTable: 'TokenEngineCardDefinition'
+    },
+    create: {
+      name: 'TokenEngine',
+      summary: 'A Engine Game where you use tokens to get resources which generate more tokens. Game with similar rules: Splendor',
+      rules: '# TokenEngine Rules\n\n## Overview\nTokenEngine is an engine-building game where players use tokens to acquire resources that generate more tokens.\n\n## Setup\n- Each player starts with 3 tokens of each color\n- Shuffle the card deck and deal 4 cards to each player\n\n## Gameplay\n1. On your turn, you may either:\n   - Take 3 tokens of different colors\n   - Take 2 tokens of the same color (if available)\n   - Purchase a card using your tokens\n\n2. When you purchase a card, place it in front of you\n3. Cards provide ongoing benefits and victory points\n\n## Victory\n- The game ends when a player reaches 15 victory points\n- The player with the most points wins!',
+      cardDefinitionTable: 'TokenEngineCardDefinition'
+    }
+  })
+
+  console.log('✅ TokenEngine game upserted')
+
   // Seed with initial CardSet data using upserts
   const cardSets = [
     {
       title: "Modern UI Components",
       description: "A collection of modern, responsive UI components built with React and Chakra UI",
       imageUrl: "https://placehold.co/300x200/4299E1/FFFFFF?text=UI+Components",
-      category: "UI/UX",
+      gameId: tokenEngineGame.id,
     },
     {
       title: "E-commerce Templates",
       description: "Complete e-commerce website templates with shopping cart functionality",
       imageUrl: "https://placehold.co/300x200/48BB78/FFFFFF?text=E-commerce",
-      category: "E-commerce",
+      gameId: tokenEngineGame.id,
     },
     {
       title: "Dashboard Layouts",
       description: "Professional dashboard layouts with charts, tables, and analytics",
       imageUrl: "https://placehold.co/300x200/ED8936/FFFFFF?text=Dashboard",
-      category: "Dashboard",
+      gameId: tokenEngineGame.id,
     },
     {
       title: "Mobile App Templates",
       description: "Cross-platform mobile app templates with native-like performance",
       imageUrl: "https://placehold.co/300x200/9F7AEA/FFFFFF?text=Mobile+App",
-      category: "Mobile",
+      gameId: tokenEngineGame.id,
     },
     {
       title: "Landing Page Designs",
       description: "High-converting landing page templates for various industries",
       imageUrl: "https://placehold.co/300x200/F56565/FFFFFF?text=Landing+Page",
-      category: "Marketing",
+      gameId: tokenEngineGame.id,
     },
     {
       title: "Admin Panels",
       description: "Feature-rich admin panel templates with user management",
       imageUrl: "https://placehold.co/300x200/38B2AC/FFFFFF?text=Admin+Panel",
-      category: "Admin",
+      gameId: tokenEngineGame.id,
     },
   ]
 
@@ -164,7 +182,7 @@ async function main() {
       update: {
         description: cardSet.description,
         imageUrl: cardSet.imageUrl,
-        category: cardSet.category,
+        gameId: cardSet.gameId,
       },
       create: {
         ...cardSet,

@@ -34,12 +34,24 @@ model User {
   updatedAt   DateTime  @updatedAt
 }
 
+model Game {
+  id                  Int       @id @default(autoincrement())
+  name                String    @unique
+  summary             String
+  rules               String    // Markdown content
+  cardDefinitionTable String    // Reference to the table containing card definitions
+  cardSets            CardSet[] // Relation field (not loaded by default)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
 model CardSet {
   id          Int      @id @default(autoincrement())
   title       String
   description String
   imageUrl    String
-  category    String
+  gameId      Int
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   userId      Int
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())

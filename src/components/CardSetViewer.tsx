@@ -50,7 +50,7 @@ export function CardSetViewer({ cardSet }: CardSetViewerProps) {
             fontSize="sm"
             fontWeight="medium"
           >
-            {cardSet.category}
+            {cardSet.game?.name || 'Unknown Game'}
           </Box>
           {/* <Text fontSize="sm" color="gray.500">
             {new Date(cardSet.createdAt).toLocaleDateString()}

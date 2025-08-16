@@ -73,7 +73,7 @@ function App() {
   const filteredCardSets = cardSets.filter(cardSet =>
     cardSet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     cardSet.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cardSet.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (cardSet.game?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
@@ -88,7 +88,7 @@ function App() {
               </Heading>
             </Link>
             <Flex align="center" gap={4}>
-              <Link to="/card-definitions">
+              <Link to="/games">
                 <Button 
                   bg="white"
                   color="blue.600"
@@ -99,7 +99,7 @@ function App() {
                   px={4}
                   py={2}
                 >
-                  Card Definitions
+                  Games
                 </Button>
               </Link>
               <Link to="/card-sets">

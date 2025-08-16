@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Button,
@@ -54,23 +54,32 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: '',
+    gameId: '',
     imageUrl: ''
   })
+  const [games, setGames] = useState<Array<{ id: number; name: string }>>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loadingGames, setLoadingGames] = useState(true)
 
-  const categories = [
-    'Strategy',
-    'Adventure',
-    'Fantasy',
-    'Sci-Fi',
-    'Horror',
-    'Mystery',
-    'Comedy',
-    'Educational',
-    'Custom'
-  ]
+  // Fetch games on component mount
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        const response = await fetch('/api/games')
+        if (response.ok) {
+          const gamesData = await response.json()
+          setGames(gamesData)
+        }
+      } catch (error) {
+        console.error('Error fetching games:', error)
+      } finally {
+        setLoadingGames(false)
+      }
+    }
+
+    fetchGames()
+  }, [])
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -87,8 +96,8 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
       newErrors.description = 'Description must be at least 10 characters'
     }
 
-    if (!formData.category) {
-      newErrors.category = 'Category is required'
+    if (!formData.gameId) {
+      newErrors.gameId = 'Game is required'
     }
 
     if (!formData.imageUrl.trim()) {
@@ -148,7 +157,7 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
       setFormData({
         title: '',
         description: '',
-        category: '',
+        gameId: '',
         imageUrl: ''
       })
 
@@ -251,28 +260,29 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
               )}
             </Box>
 
-            {/* Category Field */}
+            {/* Game Field */}
             <Box>
               <label style={formStyles.label}>
-                Category
+                Game
               </label>
               <select
-                value={formData.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
+                value={formData.gameId}
+                onChange={(e) => handleInputChange('gameId', e.target.value)}
                 onFocus={handleInputFocus}
                 onBlur={handleInputBlur}
-                style={errors.category ? formStyles.inputError : formStyles.input}
+                style={errors.gameId ? formStyles.inputError : formStyles.input}
+                disabled={loadingGames}
               >
-                <option value="">Select a category</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category}
+                <option value="">Select a game</option>
+                {games.map(game => (
+                  <option key={game.id} value={game.id}>
+                    {game.name}
                   </option>
                 ))}
               </select>
-              {errors.category && (
+              {errors.gameId && (
                 <Text color="red.500" fontSize="sm" mt={1}>
-                  {errors.category}
+                  {errors.gameId}
                 </Text>
               )}
             </Box>
