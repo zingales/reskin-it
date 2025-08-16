@@ -9,9 +9,17 @@ import type { TokenType, TokenEngineCardDefinition } from '../types/CardDefiniti
 
 interface TokenEngineCardDefinitionViewerProps {
   cardDefinitions: TokenEngineCardDefinition[]
+  selectedCardIds?: number[]
+  onCardSelectionChange?: (cardId: number, isSelected: boolean) => void
+  allowSelection?: boolean
 }
 
-export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: TokenEngineCardDefinitionViewerProps) {
+export default function TokenEngineCardDefinitionViewer({ 
+  cardDefinitions, 
+  selectedCardIds = [], 
+  onCardSelectionChange,
+  allowSelection = false 
+}: TokenEngineCardDefinitionViewerProps) {
   const [filteredCards, setFilteredCards] = useState<TokenEngineCardDefinition[]>(cardDefinitions)
   const [sortConfig, setSortConfig] = useState<{
     key: string | null
@@ -20,6 +28,7 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
   const [filters, setFilters] = useState({
     tokens: [] as TokenType[],
     tiers: [] as number[],
+    showSelectedOnly: false,
     minPoints: 0,
     maxPoints: 5,
     minWhiteCost: 0,
@@ -47,6 +56,11 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
       filtered = filtered.filter(card => filters.tiers.includes(card.tier))
     }
 
+    // Filter by selection (only if selection is allowed)
+    if (allowSelection && filters.showSelectedOnly) {
+      filtered = filtered.filter(card => selectedCardIds.includes(card.id))
+    }
+
     // Filter by points range
     filtered = filtered.filter(card => 
       card.points >= filters.minPoints && card.points <= filters.maxPoints
@@ -67,10 +81,15 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
     // Apply sorting
     if (sortConfig.key) {
       filtered.sort((a, b) => {
-        let aValue: number | string
-        let bValue: number | string
+        let aValue: number | string | boolean
+        let bValue: number | string | boolean
 
         switch (sortConfig.key) {
+          case 'selected':
+            // Sort by selection status (selected cards first)
+            aValue = selectedCardIds.includes(a.id)
+            bValue = selectedCardIds.includes(b.id)
+            break
           case 'id':
             aValue = a.id
             bValue = b.id
@@ -314,7 +333,7 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
         <Text fontSize="xl" fontWeight="semibold" mb={4}>Filters</Text>
         
         {/* Basic Filters */}
-        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4} mb={6}>
+        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4} mb={4}>
           {/* Token Filter */}
           <Box>
             <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>
@@ -413,6 +432,46 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
               ))}
             </VStack>
           </Box>
+
+          {/* Selection Filter - Only show if selection is allowed */}
+          {allowSelection && (
+            <Box gridColumn={{ base: "1", md: "1 / -1" }}>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>
+                Selection
+              </Text>
+              <Box display="flex" alignItems="center">
+                <input
+                  type="checkbox"
+                  id="show-selected-only"
+                  checked={filters.showSelectedOnly}
+                  onChange={(e) => {
+                    setFilters(prev => ({ ...prev, showSelectedOnly: e.target.checked }))
+                  }}
+                  style={{ marginRight: '8px' }}
+                />
+                <label 
+                  htmlFor="show-selected-only"
+                  style={{ 
+                    fontSize: '14px', 
+                    color: '#374151',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Text
+                    fontSize="sm"
+                    color="blue.800"
+                    fontWeight="medium"
+                    whiteSpace="nowrap"
+                  >
+                    Show Selected Only ({selectedCardIds.length})
+                  </Text>
+                </label>
+              </Box>
+            </Box>
+          )}
         </Grid>
 
         {/* Points Range Slider */}
@@ -488,6 +547,27 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
+                {allowSelection && (
+                  <th 
+                    style={{ 
+                      padding: '12px 24px', 
+                      textAlign: 'center', 
+                      fontSize: '12px', 
+                      fontWeight: '500', 
+                      color: '#6b7280', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.05em',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      width: '50px'
+                    }}
+                    onClick={() => handleSort('selected')}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                  >
+                    Select {getSortIcon('selected')}
+                  </th>
+                )}
                 <th 
                   style={{ 
                     padding: '12px 24px', 
@@ -655,8 +735,42 @@ export default function TokenEngineCardDefinitionViewer({ cardDefinitions }: Tok
             <tbody>
               {filteredCards.map((card) => {
                 const cost = parseCost(card.cost)
+                const isSelected = selectedCardIds.includes(card.id)
                 return (
-                  <tr key={card.id} style={{ borderBottom: '1px solid #e5e7eb' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <tr 
+                    key={card.id} 
+                    style={{ 
+                      borderBottom: '1px solid #e5e7eb',
+                      backgroundColor: isSelected ? '#ebf8ff' : 'transparent',
+                      cursor: allowSelection ? 'pointer' : 'default'
+                    }} 
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isSelected ? '#dbeafe' : '#f9fafb'} 
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isSelected ? '#ebf8ff' : 'transparent'}
+                    onClick={() => {
+                      if (allowSelection && onCardSelectionChange) {
+                        onCardSelectionChange(card.id, !isSelected)
+                      }
+                    }}
+                  >
+                    {allowSelection && (
+                      <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            if (onCardSelectionChange) {
+                              onCardSelectionChange(card.id, e.target.checked)
+                            }
+                          }}
+                          style={{
+                            width: '16px',
+                            height: '16px',
+                            cursor: 'pointer'
+                          }}
+                        />
+                      </td>
+                    )}
                     <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '500', color: '#111827' }}>
                       #{card.id}
                     </td>

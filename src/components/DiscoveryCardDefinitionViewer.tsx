@@ -8,15 +8,24 @@ import type { TokenType, TokenEngineDiscoveryCardDefinition } from '../types/Car
 
 interface DiscoveryCardDefinitionViewerProps {
   cardDefinitions: TokenEngineDiscoveryCardDefinition[]
+  selectedCardIds?: number[]
+  onCardSelectionChange?: (cardId: number, isSelected: boolean) => void
+  allowSelection?: boolean
 }
 
-export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: DiscoveryCardDefinitionViewerProps) {
+export default function DiscoveryCardDefinitionViewer({ 
+  cardDefinitions, 
+  selectedCardIds = [], 
+  onCardSelectionChange,
+  allowSelection = false 
+}: DiscoveryCardDefinitionViewerProps) {
   const [filteredCards, setFilteredCards] = useState<TokenEngineDiscoveryCardDefinition[]>(cardDefinitions)
   const [sortConfig, setSortConfig] = useState<{
     key: string | null
     direction: 'asc' | 'desc'
   }>({ key: null, direction: 'asc' })
   const [filters, setFilters] = useState({
+    showSelectedOnly: false,
     minPoints: 0,
     maxPoints: 5,
     minWhiteCost: 0,
@@ -33,6 +42,11 @@ export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: Disco
 
   useEffect(() => {
     let filtered = cardDefinitions
+
+    // Filter by selection (only if selection is allowed)
+    if (allowSelection && filters.showSelectedOnly) {
+      filtered = filtered.filter(card => selectedCardIds.includes(card.id))
+    }
 
     // Filter by points range
     filtered = filtered.filter(card => 
@@ -54,10 +68,15 @@ export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: Disco
     // Apply sorting
     if (sortConfig.key) {
       filtered.sort((a, b) => {
-        let aValue: number | string
-        let bValue: number | string
+        let aValue: number | string | boolean
+        let bValue: number | string | boolean
 
         switch (sortConfig.key) {
+          case 'selected':
+            // Sort by selection status (selected cards first)
+            aValue = selectedCardIds.includes(a.id)
+            bValue = selectedCardIds.includes(b.id)
+            break
           case 'id':
             aValue = a.id
             bValue = b.id
@@ -286,6 +305,46 @@ export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: Disco
           />
         </Box>
 
+        {/* Selection Filter - Only show if selection is allowed */}
+        {allowSelection && (
+          <Box mb={6}>
+            <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>
+              Selection
+            </Text>
+            <Box display="flex" alignItems="center">
+              <input
+                type="checkbox"
+                id="show-selected-only"
+                checked={filters.showSelectedOnly}
+                onChange={(e) => {
+                  setFilters(prev => ({ ...prev, showSelectedOnly: e.target.checked }))
+                }}
+                style={{ marginRight: '8px' }}
+              />
+              <label 
+                htmlFor="show-selected-only"
+                style={{ 
+                  fontSize: '14px', 
+                  color: '#374151',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <Text
+                  fontSize="sm"
+                  color="blue.800"
+                  fontWeight="medium"
+                  whiteSpace="nowrap"
+                >
+                  Show Selected Only ({selectedCardIds.length})
+                </Text>
+              </label>
+            </Box>
+          </Box>
+        )}
+
         {/* Cost Filters */}
         <Text fontSize="lg" fontWeight="semibold" mb={4}>Cost Filters</Text>
         <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
@@ -345,6 +404,27 @@ export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: Disco
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
               <tr>
+                {allowSelection && (
+                  <th 
+                    style={{ 
+                      padding: '12px 24px', 
+                      textAlign: 'center', 
+                      fontSize: '12px', 
+                      fontWeight: '500', 
+                      color: '#6b7280', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.05em',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      width: '50px'
+                    }}
+                    onClick={() => handleSort('selected')}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                  >
+                    Select {getSortIcon('selected')}
+                  </th>
+                )}
                 <th 
                   style={{ 
                     padding: '12px 24px', 
@@ -476,8 +556,42 @@ export default function DiscoveryCardDefinitionViewer({ cardDefinitions }: Disco
             <tbody>
               {filteredCards.map((card) => {
                 const cost = parseCost(card.cost)
+                const isSelected = selectedCardIds.includes(card.id)
                 return (
-                  <tr key={card.id} style={{ borderBottom: '1px solid #e5e7eb' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <tr 
+                    key={card.id} 
+                    style={{ 
+                      borderBottom: '1px solid #e5e7eb',
+                      backgroundColor: isSelected ? '#ebf8ff' : 'transparent',
+                      cursor: allowSelection ? 'pointer' : 'default'
+                    }} 
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isSelected ? '#dbeafe' : '#f9fafb'} 
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isSelected ? '#ebf8ff' : 'transparent'}
+                    onClick={() => {
+                      if (allowSelection && onCardSelectionChange) {
+                        onCardSelectionChange(card.id, !isSelected)
+                      }
+                    }}
+                  >
+                    {allowSelection && (
+                      <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            if (onCardSelectionChange) {
+                              onCardSelectionChange(card.id, e.target.checked)
+                            }
+                          }}
+                          style={{
+                            width: '16px',
+                            height: '16px',
+                            cursor: 'pointer'
+                          }}
+                        />
+                      </td>
+                    )}
                     <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '500', color: '#111827' }}>
                       #{card.id}
                     </td>

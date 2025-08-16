@@ -198,7 +198,12 @@ async function getDeckById(id: number) {
     const deck = await prisma.deck.findUnique({
       where: { id },
       include: {
-        cardSet: true,
+        cardSet: {
+          include: {
+            user: true,
+            game: true
+          }
+        },
         gameCardDefinition: true
       }
     })
@@ -421,6 +426,48 @@ app.get('/api/decks/:id', async (req: any, res: any) => {
   } catch (error) {
     console.error('Error fetching deck:', error)
     return res.status(500).json({ error: 'Failed to fetch deck' })
+  }
+})
+
+app.patch('/api/decks/:id', authenticateToken, async (req: any, res: any) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    const { cardDefinitionIds } = req.body
+    
+    // Verify the deck belongs to the authenticated user
+    const deck = await prisma.deck.findUnique({
+      where: { id },
+      include: {
+        cardSet: {
+          select: { userId: true }
+        }
+      }
+    })
+    
+    if (!deck) {
+      return res.status(404).json({ error: 'Deck not found' })
+    }
+    
+    if (deck.cardSet.userId !== req.user!.userId) {
+      return res.status(403).json({ error: 'Access denied' })
+    }
+
+    // Update the deck
+    const updatedDeck = await prisma.deck.update({
+      where: { id },
+      data: {
+        cardDefinitionIds: cardDefinitionIds || []
+      },
+      include: {
+        cardSet: true,
+        gameCardDefinition: true
+      }
+    })
+
+    return res.json(updatedDeck)
+  } catch (error) {
+    console.error('Error updating deck:', error)
+    return res.status(500).json({ error: 'Failed to update deck' })
   }
 })
 

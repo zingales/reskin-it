@@ -19,15 +19,6 @@ import type { Game } from '../types/Game'
 import type { Deck } from '../types/Deck'
 import type { GameCardDefinition } from '../types/Game'
 
-// Type for card definitions from the API
-interface CardDefinition {
-  id: number
-  token?: string
-  points?: number
-  cost?: string
-  tier?: number
-}
-
 // Type for CardSet with guaranteed non-null game and decks
 type CardSetWithGameAndDecks = Omit<CardSet, 'game' | 'decks'> & { 
   game: Game
@@ -42,15 +33,13 @@ export default function CardSetView() {
   const [error, setError] = useState<string | null>(null)
   const [showCreateDeck, setShowCreateDeck] = useState(false)
   const [gameCardDefinitions, setGameCardDefinitions] = useState<GameCardDefinition[]>([])
-  const [cardDefinitions, setCardDefinitions] = useState<CardDefinition[]>([])
   const { user } = useAuth()
 
   // Form state for creating a new deck
   const [deckForm, setDeckForm] = useState({
     name: '',
     description: '',
-    gameCardDefinitionId: '',
-    cardDefinitionIds: [] as number[]
+    gameCardDefinitionId: ''
   })
 
   // Set page title
@@ -96,10 +85,10 @@ export default function CardSetView() {
   }, [id])
 
   const handleCreateDeck = async () => {
-    if (!cardSet || !deckForm.name || !deckForm.gameCardDefinitionId || deckForm.cardDefinitionIds.length === 0) {
+    if (!cardSet || !deckForm.name || !deckForm.gameCardDefinitionId) {
       toaster.create({
         title: 'Error',
-        description: 'Please fill in all required fields and select at least one card.',
+        description: 'Please enter a deck name and select a card type.',
         type: 'error'
       })
       return
@@ -116,7 +105,8 @@ export default function CardSetView() {
         body: JSON.stringify({
           ...deckForm,
           cardSetId: cardSet.id,
-          gameCardDefinitionId: parseInt(deckForm.gameCardDefinitionId, 10)
+          gameCardDefinitionId: parseInt(deckForm.gameCardDefinitionId, 10),
+          cardDefinitionIds: [] // Empty array for now
         })
       })
 
@@ -136,8 +126,7 @@ export default function CardSetView() {
       setDeckForm({
         name: '',
         description: '',
-        gameCardDefinitionId: '',
-        cardDefinitionIds: []
+        gameCardDefinitionId: ''
       })
       
       setShowCreateDeck(false)
@@ -154,26 +143,6 @@ export default function CardSetView() {
         description: 'Failed to create deck. Please try again.',
         type: 'error'
       })
-    }
-  }
-
-  const handleGameCardDefinitionChange = async (gameCardDefinitionId: string) => {
-    if (!gameCardDefinitionId) {
-      setCardDefinitions([])
-      return
-    }
-
-    const gameCardDef = gameCardDefinitions.find(def => def.id.toString() === gameCardDefinitionId)
-    if (!gameCardDef) return
-
-    try {
-      const response = await fetch(`/api/card-definitions/${gameCardDef.tableName}`)
-      if (response.ok) {
-        const data = await response.json()
-        setCardDefinitions(data)
-      }
-    } catch (err) {
-      console.error('Error fetching card definitions:', err)
     }
   }
 
@@ -348,52 +317,69 @@ export default function CardSetView() {
                 </Box>
               </Center>
             ) : (
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
-                {cardSet.decks.map((deck) => (
-                  <Box
-                    key={deck.id}
-                    bg="white"
-                    borderRadius="lg"
-                    p={6}
-                    shadow="md"
-                    border="1px"
-                    borderColor="gray.200"
-                    _hover={{ shadow: 'lg' }}
-                    transition="all 0.2s"
-                  >
-                    <Box>
-                      <Flex justify="space-between" align="start" mb={2}>
-                        <Heading size="md" color="gray.800">
-                          {deck.name}
-                        </Heading>
-                      </Flex>
-                      <Box 
-                        bg="green.100" 
-                        color="green.800" 
-                        px={2} 
-                        py={1} 
-                        borderRadius="full"
-                        fontSize="xs"
-                        fontWeight="medium"
-                        display="inline-block"
-                        mb={3}
-                      >
-                        {deck.gameCardDefinition.name}
-                      </Box>
-                      
-                      {deck.description && (
-                        <Text color="gray.600" fontSize="sm" mb={3}>
-                          {deck.description}
+              <>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
+                                  {cardSet.decks.map((deck) => (
+                  <Link key={deck.id} to={`/decks/${deck.id}`} style={{ textDecoration: 'none' }}>
+                    <Box
+                      bg="white"
+                      borderRadius="lg"
+                      p={6}
+                      shadow="md"
+                      border="1px"
+                      borderColor="gray.200"
+                      _hover={{ shadow: 'lg' }}
+                      transition="all 0.2s"
+                      cursor="pointer"
+                    >
+                      <Box>
+                        <Flex justify="space-between" align="start" mb={2}>
+                          <Heading size="md" color="gray.800">
+                            {deck.name}
+                          </Heading>
+                        </Flex>
+                        <Box 
+                          bg="green.100" 
+                          color="green.800" 
+                          px={2} 
+                          py={1} 
+                          borderRadius="full"
+                          fontSize="xs"
+                          fontWeight="medium"
+                          display="inline-block"
+                          mb={3}
+                        >
+                          {deck.gameCardDefinition.name}
+                        </Box>
+                        
+                        {deck.description && (
+                          <Text color="gray.600" fontSize="sm" mb={3}>
+                            {deck.description}
+                          </Text>
+                        )}
+                        
+                        <Text fontSize="sm" color="gray.500">
+                          {deck.cardDefinitionIds.length} card{deck.cardDefinitionIds.length !== 1 ? 's' : ''}
                         </Text>
-                      )}
-                      
-                      <Text fontSize="sm" color="gray.500">
-                        {deck.cardDefinitionIds.length} card{deck.cardDefinitionIds.length !== 1 ? 's' : ''}
-                      </Text>
+                      </Box>
                     </Box>
-                  </Box>
+                  </Link>
                 ))}
-              </SimpleGrid>
+                </SimpleGrid>
+                
+                {/* Add Another Deck Button - Always visible to owner when decks exist */}
+                {isOwner && (
+                  <Center mt={8}>
+                    <Button
+                      onClick={() => setShowCreateDeck(true)}
+                      colorScheme="blue"
+                      size="lg"
+                    >
+                      Add Another Deck
+                    </Button>
+                  </Center>
+                )}
+              </>
             )}
           </Box>
         </Container>
@@ -475,14 +461,7 @@ export default function CardSetView() {
                 <Text fontWeight="500" mb={2}>Card Type *</Text>
                 <select
                   value={deckForm.gameCardDefinitionId}
-                  onChange={(e) => {
-                    setDeckForm(prev => ({ 
-                      ...prev, 
-                      gameCardDefinitionId: e.target.value,
-                      cardDefinitionIds: []
-                    }))
-                    handleGameCardDefinitionChange(e.target.value)
-                  }}
+                  onChange={(e) => setDeckForm(prev => ({ ...prev, gameCardDefinitionId: e.target.value }))}
                   style={{
                     width: '100%',
                     padding: '0.75rem',
@@ -501,42 +480,6 @@ export default function CardSetView() {
                 </select>
               </Box>
 
-              {cardDefinitions.length > 0 && (
-                <Box mb={6}>
-                  <Text fontWeight="500" mb={2}>Select Cards *</Text>
-                  <Box maxH="200px" overflowY="auto" border="1px solid #e2e8f0" borderRadius="0.375rem" p={2}>
-                    {cardDefinitions.map((card: CardDefinition) => (
-                      <Box
-                        key={card.id}
-                        p={3}
-                        border="1px"
-                        borderColor={deckForm.cardDefinitionIds.includes(card.id) ? "#3182ce" : "#e2e8f0"}
-                        borderRadius="md"
-                        bg={deckForm.cardDefinitionIds.includes(card.id) ? "#ebf8ff" : "white"}
-                        cursor="pointer"
-                        mb={2}
-                        onClick={() => {
-                          setDeckForm(prev => ({
-                            ...prev,
-                            cardDefinitionIds: prev.cardDefinitionIds.includes(card.id)
-                              ? prev.cardDefinitionIds.filter(id => id !== card.id)
-                              : [...prev.cardDefinitionIds, card.id]
-                          }))
-                        }}
-                      >
-                        <Text fontSize="sm" fontWeight="medium">
-                          {card.token || card.points ? `${card.token || 'Points'}: ${card.points}` : `Card ${card.id}`}
-                        </Text>
-                        {card.cost && (
-                          <Text fontSize="xs" color="gray.600">
-                            Cost: {card.cost}
-                          </Text>
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
 
               <Flex gap={3} justify="end">
                 <Button onClick={() => setShowCreateDeck(false)}>
