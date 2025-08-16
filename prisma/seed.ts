@@ -266,68 +266,149 @@ async function main() {
 
   console.log('✅ TokenEngine discovery card definition table upserted')
 
-  // Seed with initial CardSet data using upserts
-  const cardSets = [
-    {
-      title: "Modern UI Components",
-      description: "A collection of modern, responsive UI components built with React and Chakra UI",
-      imageUrl: "https://placehold.co/300x200/4299E1/FFFFFF?text=UI+Components",
-      gameId: tokenEngineGame.id,
-    },
-    {
-      title: "E-commerce Templates",
-      description: "Complete e-commerce website templates with shopping cart functionality",
-      imageUrl: "https://placehold.co/300x200/48BB78/FFFFFF?text=E-commerce",
-      gameId: tokenEngineGame.id,
-    },
-    {
-      title: "Dashboard Layouts",
-      description: "Professional dashboard layouts with charts, tables, and analytics",
-      imageUrl: "https://placehold.co/300x200/ED8936/FFFFFF?text=Dashboard",
-      gameId: tokenEngineGame.id,
-    },
-    {
-      title: "Mobile App Templates",
-      description: "Cross-platform mobile app templates with native-like performance",
-      imageUrl: "https://placehold.co/300x200/9F7AEA/FFFFFF?text=Mobile+App",
-      gameId: tokenEngineGame.id,
-    },
-    {
-      title: "Landing Page Designs",
-      description: "High-converting landing page templates for various industries",
-      imageUrl: "https://placehold.co/300x200/F56565/FFFFFF?text=Landing+Page",
-      gameId: tokenEngineGame.id,
-    },
-    {
-      title: "Admin Panels",
-      description: "Feature-rich admin panel templates with user management",
-      imageUrl: "https://placehold.co/300x200/38B2AC/FFFFFF?text=Admin+Panel",
-      gameId: tokenEngineGame.id,
-    },
-  ]
-
-  // Upsert card sets (using title as unique identifier)
-  for (const cardSet of cardSets) {
-    await prisma.cardSet.upsert({
-      where: { 
-        title_userId: {
-          title: cardSet.title,
-          userId: testUser.id
-        }
-      },
-      update: {
-        description: cardSet.description,
-        imageUrl: cardSet.imageUrl,
-        gameId: cardSet.gameId,
-      },
-      create: {
-        ...cardSet,
+  // Create a single card set with two decks
+  const tokenEngineCardSet = await prisma.cardSet.upsert({
+    where: { 
+      title_userId: {
+        title: "TokenEngine Example Deck",
         userId: testUser.id
-      },
-    })
+      }
+    },
+    update: {
+      description: "A complete TokenEngine starter set with token cards and discovery cards",
+      imageUrl: "https://placehold.co/300x200/667eea/FFFFFF?text=TokenEngine",
+      gameId: tokenEngineGame.id,
+    },
+    create: {
+      title: "TokenEngine Starter Set",
+      description: "A complete TokenEngine starter set with token cards and discovery cards",
+      imageUrl: "https://placehold.co/300x200/667eea/FFFFFF?text=TokenEngine",
+      gameId: tokenEngineGame.id,
+      userId: testUser.id
+    },
+  })
+
+  console.log('✅ TokenEngine starter card set upserted')
+
+  // Get the GameCardDefinition IDs
+  const tokenCardDefinition = await prisma.gameCardDefinition.findFirst({
+    where: {
+      gameId: tokenEngineGame.id,
+      name: tokenEngineCardDefinitionName
+    }
+  })
+
+  const discoveryCardDefinition = await prisma.gameCardDefinition.findFirst({
+    where: {
+      gameId: tokenEngineGame.id,
+      name: tokenEngineDiscoveryCardDefinitionName
+    }
+  })
+
+  if (!tokenCardDefinition || !discoveryCardDefinition) {
+    throw new Error('GameCardDefinitions not found')
   }
 
-  console.log('✅ Default card sets upserted')
+  // Get the card definition IDs for creating decks
+  const tokenCards = await prisma.tokenEngineCardDefinition.findMany({
+    select: { id: true, tier: true }
+  })
+  const discoveryCards = await prisma.tokenEngineDiscoveryCardDefinition.findMany({
+    select: { id: true }
+  })
+
+  // Create Discovery Cards deck (all discovery cards)
+  const discoveryCardsDeck = await prisma.deck.upsert({
+    where: {
+      name_cardSetId: {
+        name: "Discovery Cards",
+        cardSetId: tokenEngineCardSet.id
+      }
+    },
+    update: {
+      description: "All discovery cards that provide victory points when requirements are met",
+      gameCardDefinitionId: discoveryCardDefinition.id,
+      cardDefinitionIds: discoveryCards.map(card => card.id)
+    },
+    create: {
+      name: "Discovery Cards",
+      description: "All discovery cards that provide victory points when requirements are met",
+      cardSetId: tokenEngineCardSet.id,
+      gameCardDefinitionId: discoveryCardDefinition.id,
+      cardDefinitionIds: discoveryCards.map(card => card.id)
+    }
+  })
+
+  // Create Tier 1 Token Cards deck
+  const tier1TokenCards = tokenCards.filter(card => card.tier === 1)
+  const tier1Deck = await prisma.deck.upsert({
+    where: {
+      name_cardSetId: {
+        name: "Tier 1 Token Cards",
+        cardSetId: tokenEngineCardSet.id
+      }
+    },
+    update: {
+      description: "All Tier 1 token cards for building your engine",
+      gameCardDefinitionId: tokenCardDefinition.id,
+      cardDefinitionIds: tier1TokenCards.map(card => card.id)
+    },
+    create: {
+      name: "Tier 1 Token Cards",
+      description: "All Tier 1 token cards for building your engine",
+      cardSetId: tokenEngineCardSet.id,
+      gameCardDefinitionId: tokenCardDefinition.id,
+      cardDefinitionIds: tier1TokenCards.map(card => card.id)
+    }
+  })
+
+  // Create Tier 2 Token Cards deck
+  const tier2TokenCards = tokenCards.filter(card => card.tier === 2)
+  const tier2Deck = await prisma.deck.upsert({
+    where: {
+      name_cardSetId: {
+        name: "Tier 2 Token Cards",
+        cardSetId: tokenEngineCardSet.id
+      }
+    },
+    update: {
+      description: "All Tier 2 token cards for building your engine",
+      gameCardDefinitionId: tokenCardDefinition.id,
+      cardDefinitionIds: tier2TokenCards.map(card => card.id)
+    },
+    create: {
+      name: "Tier 2 Token Cards",
+      description: "All Tier 2 token cards for building your engine",
+      cardSetId: tokenEngineCardSet.id,
+      gameCardDefinitionId: tokenCardDefinition.id,
+      cardDefinitionIds: tier2TokenCards.map(card => card.id)
+    }
+  })
+
+  // Create Tier 3 Token Cards deck
+  const tier3TokenCards = tokenCards.filter(card => card.tier === 3)
+  const tier3Deck = await prisma.deck.upsert({
+    where: {
+      name_cardSetId: {
+        name: "Tier 3 Token Cards",
+        cardSetId: tokenEngineCardSet.id
+      }
+    },
+    update: {
+      description: "All Tier 3 token cards for building your engine",
+      gameCardDefinitionId: tokenCardDefinition.id,
+      cardDefinitionIds: tier3TokenCards.map(card => card.id)
+    },
+    create: {
+      name: "Tier 3 Token Cards",
+      description: "All Tier 3 token cards for building your engine",
+      cardSetId: tokenEngineCardSet.id,
+      gameCardDefinitionId: tokenCardDefinition.id,
+      cardDefinitionIds: tier3TokenCards.map(card => card.id)
+    }
+  })
+
+  console.log('✅ TokenEngine decks created: Discovery Cards, Tier 1, Tier 2, and Tier 3 Token Cards')
 
   // Seed TokenEngineCardDefinitions from CSV
   await seedTokenEngineCardDefinitions()
