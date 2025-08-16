@@ -5,6 +5,7 @@ import {
   Image, 
   Flex
 } from '@chakra-ui/react'
+import { Link } from 'react-router-dom'
 import type { CardSet } from '../types/CardSet'
 import type { Game } from '../types/Game'
 
@@ -17,19 +18,20 @@ interface CardSetViewerProps {
 
 export function CardSetViewer({ cardSet }: CardSetViewerProps) {
   return (
-    <Box 
-      bg="white"
-      borderRadius="lg"
-      overflow="hidden" 
-      border="1px"
-      borderColor="gray.200"
-      _hover={{ 
-        transform: 'translateY(-4px)', 
-        boxShadow: 'lg',
-        transition: 'all 0.2s'
-      }}
-      cursor="pointer"
-    >
+    <Link to={`/card-sets/${cardSet.id}`} style={{ textDecoration: 'none' }}>
+      <Box 
+        bg="white"
+        borderRadius="lg"
+        overflow="hidden" 
+        border="1px"
+        borderColor="gray.200"
+        _hover={{ 
+          transform: 'translateY(-4px)', 
+          boxShadow: 'lg',
+          transition: 'all 0.2s'
+        }}
+        cursor="pointer"
+      >
       <Image 
         src={cardSet.imageUrl} 
         alt={cardSet.title}
@@ -61,6 +63,7 @@ export function CardSetViewer({ cardSet }: CardSetViewerProps) {
           </Text> */}
         </Flex>
       </Box>
-    </Box>
+      </Box>
+    </Link>
   )
 }

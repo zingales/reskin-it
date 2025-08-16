@@ -7,6 +7,7 @@ import App from './App.tsx'
 import Games from './pages/Games.tsx'
 import GameView from './pages/GameView.tsx'
 import CardSets from './pages/CardSets.tsx'
+import CardSetView from './pages/CardSetView.tsx'
 import { Auth } from './pages/Auth.tsx'
 import { AuthProvider } from './contexts/AuthContext'
 import system from './theme'
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/games" element={<Games />} />
             <Route path="/games/:id" element={<GameView />} />
             <Route path="/card-sets" element={<CardSets />} />
+            <Route path="/card-sets/:id" element={<CardSetView />} />
             <Route path="/auth" element={<Auth />} />
           </Routes>
         </BrowserRouter>

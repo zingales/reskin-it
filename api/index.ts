@@ -142,18 +142,69 @@ async function createCardSet(data: any) {
   }
 }
 
-async function getCardSetById(id: number) {
+async function getCardSetById(id: number, includeOptions?: string[]) {
   try {
+    const include: any = {
+      user: true,
+      game: true
+    }
+    
+    // Parse include options
+    if (includeOptions) {
+      if (includeOptions.includes('decks')) {
+        include.decks = {
+          include: {
+            gameCardDefinition: true
+          }
+        }
+      }
+    }
+    
     const cardSet = await prisma.cardSet.findUnique({
       where: { id },
-      include: {
-        user: true,
-        game: true
-      }
+      include
     })
     return cardSet
   } catch (error) {
     console.error('Error fetching card set:', error)
+    throw error
+  }
+}
+
+async function createDeck(data: any) {
+  try {
+    const deck = await prisma.deck.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        cardSetId: parseInt(data.cardSetId, 10),
+        gameCardDefinitionId: parseInt(data.gameCardDefinitionId, 10),
+        cardDefinitionIds: data.cardDefinitionIds
+      },
+      include: {
+        cardSet: true,
+        gameCardDefinition: true
+      }
+    })
+    return deck
+  } catch (error) {
+    console.error('Error creating deck:', error)
+    throw error
+  }
+}
+
+async function getDeckById(id: number) {
+  try {
+    const deck = await prisma.deck.findUnique({
+      where: { id },
+      include: {
+        cardSet: true,
+        gameCardDefinition: true
+      }
+    })
+    return deck
+  } catch (error) {
+    console.error('Error fetching deck:', error)
     throw error
   }
 }
@@ -301,7 +352,12 @@ app.get('/api/cardsets/user/me', authenticateToken, async (req: any, res: any) =
 app.get('/api/cardsets/:id', async (req: any, res: any) => {
   try {
     const id = parseInt(req.params.id, 10)
-    const cardSet = await getCardSetById(id)
+    
+    // Parse include parameter: ?include=decks
+    const includeParam = req.query.include as string
+    const includeOptions = includeParam ? includeParam.split(',') : undefined
+    
+    const cardSet = await getCardSetById(id, includeOptions)
     
     if (!cardSet) {
       return res.status(404).json({ error: 'Card set not found' })
@@ -311,6 +367,60 @@ app.get('/api/cardsets/:id', async (req: any, res: any) => {
   } catch (error) {
     console.error('Error fetching card set:', error)
     return res.status(500).json({ error: 'Failed to fetch card set' })
+  }
+})
+
+// Deck endpoints
+app.post('/api/decks', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { name, description, cardSetId, gameCardDefinitionId, cardDefinitionIds } = req.body
+    
+    if (!name || !cardSetId || !gameCardDefinitionId || !cardDefinitionIds) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
+
+    // Verify the card set belongs to the authenticated user
+    const cardSet = await prisma.cardSet.findUnique({
+      where: { id: parseInt(cardSetId, 10) },
+      select: { userId: true }
+    })
+    
+    if (!cardSet) {
+      return res.status(404).json({ error: 'Card set not found' })
+    }
+    
+    if (cardSet.userId !== req.user!.userId) {
+      return res.status(403).json({ error: 'Access denied' })
+    }
+
+    const deck = await createDeck({
+      name,
+      description,
+      cardSetId,
+      gameCardDefinitionId,
+      cardDefinitionIds
+    })
+
+    return res.status(201).json(deck)
+  } catch (error) {
+    console.error('Error creating deck:', error)
+    return res.status(500).json({ error: 'Failed to create deck' })
+  }
+})
+
+app.get('/api/decks/:id', async (req: any, res: any) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    const deck = await getDeckById(id)
+    
+    if (!deck) {
+      return res.status(404).json({ error: 'Deck not found' })
+    }
+    
+    return res.json(deck)
+  } catch (error) {
+    console.error('Error fetching deck:', error)
+    return res.status(500).json({ error: 'Failed to fetch deck' })
   }
 })
 
