@@ -17,6 +17,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CardSetViewer } from './components/CardSetViewer'
 import { useAuth } from './contexts/AuthContext'
 import type { CardSet } from './types/CardSet'
+import { Toaster, toaster } from './components/ui/toaster'
 import type { Game } from './types/Game'
 import './App.css'
 
@@ -28,7 +29,6 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [logoutMessage, setLogoutMessage] = useState('')
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const { user, logout, loading: authLoading } = useAuth()
   const navigate = useNavigate()
@@ -41,11 +41,11 @@ function App() {
   // Handle logout with success message
   const handleLogout = () => {
     logout()
-    setLogoutMessage('✅ Logged out successfully!')
-    // Clear the message after 3 seconds
-    setTimeout(() => {
-      setLogoutMessage('')
-    }, 3000)
+    toaster.create({
+      title: 'Success',
+      description: 'Logged out successfully!',
+      type: 'success'
+    })
   }
 
   // Fetch data from database API
@@ -106,20 +106,6 @@ function App() {
                   py={2}
                 >
                   Games
-                </Button>
-              </Link>
-              <Link to="/card-sets">
-                <Button 
-                  bg="white"
-                  color="blue.600"
-                  _hover={{ bg: 'gray.100' }}
-                  _active={{ bg: 'gray.200' }}
-                  size="sm"
-                  fontWeight="medium"
-                  px={4}
-                  py={2}
-                >
-                  My Card Sets
                 </Button>
               </Link>
               
@@ -229,6 +215,34 @@ function App() {
                             ⚙️ Account Settings
                           </button>
                           
+                          <button
+                            onClick={() => {
+                              setProfileMenuOpen(false)
+                              navigate('/card-sets')
+                            }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '0.75rem 1rem',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#2d3748',
+                              fontSize: '0.875rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f7fafc'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                            }}
+                          >
+                            🃏 My Card Sets
+                          </button>
+                          
                           <div style={{
                             borderTop: '1px solid #e2e8f0',
                             margin: '0.5rem 0'
@@ -286,26 +300,7 @@ function App() {
         </Container>
       </Box>
 
-      {/* Logout Success Message */}
-      {logoutMessage && (
-        <Box 
-          position="fixed" 
-          top="80px" 
-          left="50%" 
-          transform="translateX(-50%)" 
-          zIndex={999}
-          bg="green.100"
-          color="green.700"
-          px={4}
-          py={2}
-          borderRadius="md"
-          border="1px solid"
-          borderColor="green.200"
-          boxShadow="md"
-        >
-          {logoutMessage}
-        </Box>
-      )}
+
 
       {/* Hero Section with Large Logo and Search */}
       <Box 
@@ -464,6 +459,9 @@ function App() {
           }
         `}
       </style>
+
+      {/* Global Toaster */}
+      <Toaster />
     </Box>
   )
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { toaster } from './ui/toaster'
 
 interface RegisterProps {
   onSwitchToLogin: () => void
@@ -15,8 +16,6 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
     displayName: ''
   })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
   
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -31,19 +30,25 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
-    setSuccess(false)
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+      toaster.create({
+        title: 'Error',
+        description: 'Passwords do not match',
+        type: 'error'
+      })
       setLoading(false)
       return
     }
 
     // Validate password length
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long')
+      toaster.create({
+        title: 'Error',
+        description: 'Password must be at least 6 characters long',
+        type: 'error'
+      })
       setLoading(false)
       return
     }
@@ -55,13 +60,21 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
         formData.password,
         formData.displayName || undefined
       )
-      setSuccess(true)
+      toaster.create({
+        title: 'Success',
+        description: 'Account created successfully! Redirecting to home page...',
+        type: 'success'
+      })
       // Navigate to home page after a brief delay to show success message
       setTimeout(() => {
         navigate('/')
       }, 1500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      toaster.create({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Registration failed',
+        type: 'error'
+      })
     } finally {
       setLoading(false)
     }
@@ -79,29 +92,6 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
 
         <form onSubmit={handleSubmit} style={{ width: '100%' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {error && (
-              <div style={{ 
-                backgroundColor: '#fed7d7', 
-                color: '#c53030', 
-                padding: '0.75rem', 
-                borderRadius: '0.375rem',
-                border: '1px solid #feb2b2'
-              }}>
-                {error}
-              </div>
-            )}
-            
-            {success && (
-              <div style={{ 
-                backgroundColor: '#c6f6d5', 
-                color: '#22543d', 
-                padding: '0.75rem', 
-                borderRadius: '0.375rem',
-                border: '1px solid #9ae6b4'
-              }}>
-                ✅ Account created successfully! Redirecting to home page...
-              </div>
-            )}
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>

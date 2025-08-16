@@ -6,6 +6,7 @@ import {
   Heading,
   Text
 } from '@chakra-ui/react'
+import { toaster } from '../components/ui/toaster'
 import type { CardSet } from '../types/CardSet'
 
 interface CreateCardSetProps {
@@ -114,7 +115,7 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
     try {
       new URL(string)
       return true
-    } catch (_) {
+    } catch {
       return false
     }
   }
@@ -151,7 +152,11 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
       const cardSet = await response.json()
       
       // Show success message
-      alert(`Card Set "${cardSet.title}" created successfully!`)
+      toaster.create({
+        title: 'Success!',
+        description: `Card Set "${cardSet.title}" created successfully!`,
+        type: 'success',
+      })
 
       // Reset form
       setFormData({
@@ -167,7 +172,10 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
       }
     } catch (error) {
       console.error('Error creating card set:', error)
-      alert(error instanceof Error ? error.message : 'Failed to create card set')
+      toaster.create({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create card set'
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -210,6 +218,8 @@ export function CreateCardSet({ onCardSetCreated, onCancel }: CreateCardSetProps
           Design your own custom card set with multiple decks. You'll be able to add decks later.
         </Text>
       </Box>
+
+
 
       {/* Form */}
       <Box p={6}>

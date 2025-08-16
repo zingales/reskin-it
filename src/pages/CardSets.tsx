@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom'
 import { CardSetViewer } from '../components/CardSetViewer'
 import { CreateCardSet } from '../components/CreateCardSet'
 import { useAuth } from '../contexts/AuthContext'
+import { toaster } from '../components/ui/toaster'
 import type { CardSet } from '../types/CardSet'
 import type { Game } from '../types/Game'
 
@@ -77,7 +78,11 @@ export default function CardSets() {
     // Type assertion since we know the API includes game data
     setCardSets(prev => [newCardSet as CardSetWithGame, ...prev])
     setShowCreateForm(false)
-    alert('Card set created successfully!')
+    toaster.create({
+      title: 'Success',
+      description: 'Card set created successfully!',
+      type: 'success'
+    })
   }
 
   const handleCancelCreate = () => {
