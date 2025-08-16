@@ -42,15 +42,15 @@ jobs:
       - name: Deploy to Vercel
         run: |
           # Deploy to Vercel with environment variables
-          npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes \
-            --env DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-            --env JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+          npx vercel --prod --token $VERCEL_TOKEN --yes \
+            --env DATABASE_URL="$DATABASE_URL" \
+            --env JWT_SECRET="$JWT_SECRET" \
             --env NODE_ENV="production"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          NODE_ENV: production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          NODE_ENV: production
           
       - name: Run database migrations
         run: |
@@ -130,7 +130,7 @@ jobs:
           echo "🔍 Verifying deployment..."
           
           # Get the deployment URL and status (look for the most recent reskin-* deployment)
-          DEPLOYMENT_URL=$(npx vercel ls --token ${{ secrets.VERCEL_TOKEN }} | grep "reskin-" | head -1)
+          DEPLOYMENT_URL=$(npx vercel ls --token $VERCEL_TOKEN | grep "reskin-" | head -1)
           
           if [ -z "$DEPLOYMENT_URL" ]; then
             echo "❌ Could not find deployment URL"
