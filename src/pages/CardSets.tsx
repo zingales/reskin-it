@@ -15,9 +15,13 @@ import { CardSetViewer } from '../components/CardSetViewer'
 import { CreateCardSet } from '../components/CreateCardSet'
 import { useAuth } from '../contexts/AuthContext'
 import type { CardSet } from '../types/CardSet'
+import type { Game } from '../types/Game'
+
+// Type for CardSet with guaranteed non-null game (same as CardSetViewer expects)
+type CardSetWithGame = Omit<CardSet, 'game'> & { game: Game }
 
 export default function CardSets() {
-  const [cardSets, setCardSets] = useState<CardSet[]>([])
+  const [cardSets, setCardSets] = useState<CardSetWithGame[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -34,12 +38,12 @@ export default function CardSets() {
       setLoading(true)
       setError(null)
       
-      let url = '/api/cardsets'
+      let url = '/api/cardsets?include=game,user'
       let headers: HeadersInit = {}
       
       // If user is authenticated, fetch their card sets
       if (user) {
-        url = '/api/cardsets/user/me'
+        url = '/api/cardsets/user/me?include=game,user'
         const token = localStorage.getItem('token')
         if (token) {
           headers = {
@@ -55,7 +59,8 @@ export default function CardSets() {
       }
       
       const data = await response.json()
-      setCardSets(data)
+      // Type assertion since we know the API includes game data
+      setCardSets(data as CardSetWithGame[])
     } catch (err) {
       console.error('Error fetching card sets:', err)
       setError('Failed to load card sets. Please try again later.')
@@ -69,7 +74,8 @@ export default function CardSets() {
   }, [user])
 
   const handleCardSetCreated = (newCardSet: CardSet) => {
-    setCardSets(prev => [newCardSet, ...prev])
+    // Type assertion since we know the API includes game data
+    setCardSets(prev => [newCardSet as CardSetWithGame, ...prev])
     setShowCreateForm(false)
     alert('Card set created successfully!')
   }

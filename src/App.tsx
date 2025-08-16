@@ -12,14 +12,19 @@ import {
   Icon,
   Button
 } from '@chakra-ui/react'
+
 import { Link, useNavigate } from 'react-router-dom'
 import { CardSetViewer } from './components/CardSetViewer'
 import { useAuth } from './contexts/AuthContext'
 import type { CardSet } from './types/CardSet'
+import type { Game } from './types/Game'
 import './App.css'
 
+// Type for CardSet with guaranteed non-null game
+type CardSetWithGame = Omit<CardSet, 'game'> & { game: Game }
+
 function App() {
-  const [cardSets, setCardSets] = useState<CardSet[]>([])
+  const [cardSets, setCardSets] = useState<CardSetWithGame[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -50,14 +55,15 @@ function App() {
         setLoading(true)
         setError(null)
         
-        const response = await fetch('/api/cardsets')
+        const response = await fetch('/api/cardsets?include=game,user')
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
         
         const data = await response.json()
-        setCardSets(data)
+        // Type assertion since we know the API includes game data
+        setCardSets(data as CardSetWithGame[])
       } catch (err) {
         console.error('Error fetching card sets:', err)
         setError('Failed to load card sets. Please try again later.')

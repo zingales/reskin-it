@@ -6,9 +6,13 @@ import {
   Flex
 } from '@chakra-ui/react'
 import type { CardSet } from '../types/CardSet'
+import type { Game } from '../types/Game'
+
+// Type for CardSet with guaranteed non-null game
+type CardSetWithGame = Omit<CardSet, 'game'> & {game: Game}
 
 interface CardSetViewerProps {
-  cardSet: CardSet
+  cardSet: CardSetWithGame
 }
 
 export function CardSetViewer({ cardSet }: CardSetViewerProps) {
@@ -50,7 +54,7 @@ export function CardSetViewer({ cardSet }: CardSetViewerProps) {
             fontSize="sm"
             fontWeight="medium"
           >
-            {cardSet.game?.name || 'Unknown Game'}
+            {cardSet.game.name}
           </Box>
           {/* <Text fontSize="sm" color="gray.500">
             {new Date(cardSet.createdAt).toLocaleDateString()}

@@ -48,13 +48,26 @@ async function getGameById(id: number) {
   }
 }
 
-async function getAllCardSets() {
+async function getAllCardSets(includeOptions?: string[]) {
   try {
+    const include: any = {}
+    
+    // Parse include options
+    if (includeOptions) {
+      if (includeOptions.includes('user')) {
+        include.user = true
+      }
+      if (includeOptions.includes('game')) {
+        include.game = true
+      }
+    } else {
+      // Default behavior: include both
+      include.user = true
+      include.game = true
+    }
+    
     const cardSets = await prisma.cardSet.findMany({
-      include: {
-        user: true,
-        game: true
-      },
+      include,
       orderBy: {
         createdAt: 'desc'
       }
@@ -73,7 +86,7 @@ async function createCardSet(data: any) {
         title: data.title,
         description: data.description,
         imageUrl: data.imageUrl,
-        gameId: data.gameId,
+        gameId: parseInt(data.gameId, 10),
         userId: data.userId
       },
       include: {
@@ -151,7 +164,7 @@ app.get('/api/games', async (_req: any, res: any) => {
 
 app.get('/api/games/:id', async (req: any, res: any) => {
   try {
-    const id = parseInt(req.params.id)
+    const id = parseInt(req.params.id, 10)
     const game = await getGameById(id)
     
     if (!game) {
@@ -165,9 +178,13 @@ app.get('/api/games/:id', async (req: any, res: any) => {
   }
 })
 
-app.get('/api/cardsets', async (_req: any, res: any) => {
+app.get('/api/cardsets', async (req: any, res: any) => {
   try {
-    const cardSets = await getAllCardSets()
+    // Parse include parameter: ?include=game,user or ?include=game
+    const includeParam = req.query.include as string
+    const includeOptions = includeParam ? includeParam.split(',') : undefined
+    
+    const cardSets = await getAllCardSets(includeOptions)
     res.json(cardSets)
   } catch (error) {
     console.error('Error fetching card sets:', error)
@@ -180,22 +197,33 @@ app.get('/api/cardsets/user/me', authenticateToken, async (req: any, res: any) =
   try {
     const userId = req.user!.userId
     
+    // Parse include parameter: ?include=game,user or ?include=game
+    const includeParam = req.query.include as string
+    const includeOptions = includeParam ? includeParam.split(',') : undefined
+    
+    const include: any = {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          displayName: true,
+          bio: true,
+          avatarUrl: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }
+    }
+    
+    // Include game relation if specified or default behavior
+    if (!includeOptions || includeOptions.includes('game')) {
+      include.game = true
+    }
+    
     const userCardSets = await prisma.cardSet.findMany({
       where: { userId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            displayName: true,
-            bio: true,
-            avatarUrl: true,
-            createdAt: true,
-            updatedAt: true
-          }
-        }
-      },
+      include,
       orderBy: { createdAt: 'desc' }
     })
     
@@ -208,7 +236,7 @@ app.get('/api/cardsets/user/me', authenticateToken, async (req: any, res: any) =
 
 app.get('/api/cardsets/:id', async (req: any, res: any) => {
   try {
-    const id = parseInt(req.params.id)
+    const id = parseInt(req.params.id, 10)
     const cardSet = await getCardSetById(id)
     
     if (!cardSet) {
