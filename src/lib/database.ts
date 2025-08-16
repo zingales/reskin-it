@@ -33,7 +33,7 @@ export async function createCardSet(data: Omit<CardSet, 'id' | 'createdAt' | 'up
         title: data.title,
         description: data.description,
         imageUrl: data.imageUrl,
-        category: data.category,
+        gameId: data.gameId,
         userId: data.userId
       },
       include: {
