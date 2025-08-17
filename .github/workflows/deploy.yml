@@ -53,6 +53,8 @@ jobs:
           path: |
             dist/
             node_modules/.prisma/
+            node_modules/@prisma/
+            node_modules/prisma/
             prisma/
           retention-days: 1
           
