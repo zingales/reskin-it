@@ -4,6 +4,7 @@ import { ChakraProvider } from '@chakra-ui/react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
+import HomePage from './pages/HomePage.tsx'
 import Games from './pages/Games.tsx'
 import GameView from './pages/GameView.tsx'
 import CardSets from './pages/CardSets.tsx'
@@ -19,13 +20,15 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<App />} />
-            <Route path="/games" element={<Games />} />
-            <Route path="/games/:id" element={<GameView />} />
-            <Route path="/card-sets" element={<CardSets />} />
-            <Route path="/card-sets/:id" element={<CardSetView />} />
-            <Route path="/decks/:id" element={<DeckView />} />
-            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<App />}>
+              <Route index element={<HomePage />} />
+              <Route path="/games" element={<Games />} />
+              <Route path="/games/:id" element={<GameView />} />
+              <Route path="/card-sets" element={<CardSets />} />
+              <Route path="/card-sets/:id" element={<CardSetView />} />
+              <Route path="/decks/:id" element={<DeckView />} />
+              <Route path="/auth" element={<Auth />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </AuthProvider>
