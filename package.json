@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/debug-env.js && cp prisma/schema.prisma api/schema.prisma && prisma generate --schema=./api/schema.prisma && prisma generate && tsc -b && vite build && npm run check",
+    "prisma" : "cp prisma/schema.prisma api/schema.prisma && prisma generate --schema=./api/schema.prisma && prisma generate",
+    "build": "vite build && npm run check",
     "check": "tsc -b && eslint .",
     "preview": "vite preview",
     "seed": "npx tsx prisma/seed.ts",

@@ -6,12 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  NODE_ENV: production
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment: production
-    env:
-      NODE_ENV: production
+    outputs:
+      build-cache-key: ${{ steps.cache-key.outputs.value }}
     
     steps:
       - name: Checkout code
@@ -27,62 +29,107 @@ jobs:
         run: npm ci --include=dev
         
       - name: Generate Prisma client
-        run: npx prisma generate
+        run: | 
+          echo "🔍 Running Prisma Generate..."
+          npm run prisma
+          echo "✅ Prisma Generate completed"
         
-      - name: Type check and build
+      - name: Type check
         run: |
-          echo "🔍 Running TypeScript type check..."
-          npx tsc --noEmit
+          echo "🔍 Running TypeScript type + lint checking..."
+          npm run check
           echo "✅ TypeScript check passed"
-          
+        
+      - name: Build application
+        run: |
           echo "🔨 Building application..."
           npm run build
           echo "✅ Build completed"
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            node_modules/.prisma/
+            prisma/
+          retention-days: 1
+          
+      - name: Generate cache key
+        id: cache-key
+        run: echo "value=$(date +%s)" >> $GITHUB_OUTPUT
+
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: build
+    outputs:
+      deployment-url: ${{ steps.deploy.outputs.url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
         
       - name: Deploy to Vercel
+        id: deploy
         run: |
+          echo "🚀 Deploying to Vercel..."
+          
           # Deploy to Vercel with environment variables
           npx vercel --prod --token $VERCEL_TOKEN --yes \
             --env DATABASE_URL="$DATABASE_URL" \
             --env JWT_SECRET="$JWT_SECRET" \
             --env NODE_ENV="production"
+            
+          echo "✅ Deployment completed"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          NODE_ENV: production
+
+  database-setup:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: deploy
+    strategy:
+      matrix:
+        operation: [migrate, seed]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
           
-      - name: Run database migrations
+      - name: Install dependencies
+        run: npm ci --include=dev
+        
+      - name: Generate Prisma client
+        run: npm run prisma
+        
+      - name: Test database connection
         run: |
-          echo "🔄 Starting database migrations..."
-          
-          
-          echo "🔍 Using DATABASE_URL: ${DATABASE_URL}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:0:30}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:30:60}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:60:90}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:90:120}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:120:150}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:150:180}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:180:210}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:210:240}..."
-          echo "🔍 DATABASE_URL: ${DATABASE_URL:240:270}..."
-          
-          echo "✅ Environment variables loaded successfully"
-          
-          # Run migrations with timeout and better error handling
-          echo "🔄 Running Prisma migrations..."
-          echo "🔍 Testing database connection first..."
+          echo "🔍 Testing database connection..."
           
           # Test connection with timeout
           timeout 30s npx prisma db execute --stdin --schema=./prisma/schema.prisma <<< "SELECT 1;" || {
             echo "❌ Database connection test failed or timed out"
-            echo "🔍 Checking if database is accessible..."
-            echo "🔍 DATABASE_URL: ${DATABASE_URL:0:30}..." # Show first 50 chars for debugging
             exit 1
           }
           
           echo "✅ Database connection test passed"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          
+      - name: Run database migrations
+        if: matrix.operation == 'migrate'
+        run: |
+          echo "🔄 Running Prisma migrations..."
           
           # Run migrations with timeout
           timeout 60s npx prisma migrate deploy --schema=./prisma/schema.prisma || {
@@ -92,27 +139,14 @@ jobs:
           
           echo "✅ Database migrations completed successfully"
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          NODE_ENV: production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           
       - name: Seed database
+        if: matrix.operation == 'seed'
         run: |
-          echo "🌱 Starting database seeding..."
-          
-          echo "🔍 Testing database connection before seeding..."
-          
-          # Test connection with timeout
-          timeout 30s npx prisma db execute --stdin --schema=./prisma/schema.prisma <<< "SELECT 1;" || {
-            echo "❌ Database connection test failed or timed out"
-            exit 1
-          }
-          
-          echo "✅ Database connection test passed"
+          echo "🌱 Running seed script..."
           
           # Run seed script with timeout
-          echo "🌱 Running seed script..."
           timeout 120s npm run seed || {
             echo "❌ Seeding failed or timed out"
             exit 1
@@ -120,32 +154,75 @@ jobs:
           
           echo "✅ Database seeding completed successfully"
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          NODE_ENV: production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          
+
+  verify:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: [deploy, database-setup]
+    
+    steps:
       - name: Verify deployment
         run: |
-          echo "🔍 Verifying deployment..."
+          echo "🔍 Verifying deployment by checking production endpoints..."
           
-          # Get the deployment URL and status (look for the most recent reskin-* deployment)
-          DEPLOYMENT_URL=$(npx vercel ls --token $VERCEL_TOKEN | grep "reskin-" | head -1)
+          # Wait a moment for deployment to be fully ready
+          sleep 10
           
-          if [ -z "$DEPLOYMENT_URL" ]; then
-            echo "❌ Could not find deployment URL"
-            exit 1
-          fi
+          # Test both API health and home page with retries
+          MAX_RETRIES=5
+          RETRY_DELAY=10
           
-          echo "✅ Deployment verified at: $DEPLOYMENT_URL"
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i of $MAX_RETRIES..."
+            
+            # Test the API health endpoint
+            API_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" https://reskin-it.vercel.app/api/health || echo "000")
+            
+            # Test the home page
+            HOME_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" https://reskin-it.vercel.app/ || echo "000")
+            
+            if [ "$API_RESPONSE" = "200" ] && [ "$HOME_RESPONSE" = "200" ]; then
+              echo "✅ All health checks passed!"
+              echo "🔍 API health endpoint (HTTP $API_RESPONSE): https://reskin-it.vercel.app/api/health"
+              echo "🔍 Home page (HTTP $HOME_RESPONSE): https://reskin-it.vercel.app/"
+              break
+            else
+              echo "❌ Health check failed:"
+              echo "  - API health endpoint: HTTP $API_RESPONSE"
+              echo "  - Home page: HTTP $HOME_RESPONSE"
+              
+              if [ $i -eq $MAX_RETRIES ]; then
+                echo "❌ All health check attempts failed. Application may not be ready."
+                echo "🔍 Final response codes:"
+                echo "  - API: $API_RESPONSE"
+                echo "  - Home: $HOME_RESPONSE"
+                exit 1
+              fi
+              
+              echo "🔄 Retrying in $RETRY_DELAY seconds..."
+              sleep $RETRY_DELAY
+            fi
+          done
           
+          echo "✅ Deployment verification completed successfully"
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [build, deploy, database-setup, verify]
+    if: always()
+    
+    steps:
       - name: Notify deployment status
-        if: always()
         run: |
-          if [ ${{ job.status }} == 'success' ]; then
-            echo "✅ Deployment, migrations, and seeding completed successfully"
+          if [ ${{ needs.build.result }} == 'success' ] && [ ${{ needs.deploy.result }} == 'success' ] && [ ${{ needs.database-setup.result }} == 'success' ] && [ ${{ needs.verify.result }} == 'success' ]; then
+            echo "✅ All deployment steps completed successfully"
+            echo "🚀 Application is live and ready"
           else
-            echo "❌ Deployment, migrations, or seeding failed"
+            echo "❌ Deployment failed in one or more steps:"
+            echo "  - Build: ${{ needs.build.result }}"
+            echo "  - Deploy: ${{ needs.deploy.result }}"
+            echo "  - Database Setup: ${{ needs.database-setup.result }}"
+            echo "  - Verify: ${{ needs.verify.result }}"
+            exit 1
           fi
