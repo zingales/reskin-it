@@ -6,7 +6,7 @@ import {
   Flex,
   Button
 } from '@chakra-ui/react'
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { Toaster, toaster } from './components/ui/toaster'
 import './App.css'
@@ -14,6 +14,264 @@ import './App.css'
 export default function App() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const { user, logout, loading: authLoading } = useAuth()
+  const location = useLocation()
+
+  // Determine which navigation buttons to show based on current route
+  const getNavigationButtons = () => {
+    const pathname = location.pathname
+    
+    // Home page - show Games and Card Sets
+    if (pathname === '/') {
+      return (
+        <>
+          <Link to="/games">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Games
+            </Button>
+          </Link>
+          {user && (
+            <Link to="/card-sets">
+              <Button 
+                bg="white"
+                color="blue.600"
+                _hover={{ bg: 'gray.100' }}
+                _active={{ bg: 'gray.200' }}
+                size="sm"
+                fontWeight="medium"
+                px={4}
+                py={2}
+              >
+                Card Sets
+              </Button>
+            </Link>
+          )}
+        </>
+      )
+    }
+    
+    // Games page - show Home and Card Sets
+    if (pathname.startsWith('/games')) {
+      return (
+        <>
+          <Link to="/">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Home
+            </Button>
+          </Link>
+          {user && (
+            <Link to="/card-sets">
+              <Button 
+                bg="white"
+                color="blue.600"
+                _hover={{ bg: 'gray.100' }}
+                _active={{ bg: 'gray.200' }}
+                size="sm"
+                fontWeight="medium"
+                px={4}
+                py={2}
+              >
+                Card Sets
+              </Button>
+            </Link>
+          )}
+        </>
+      )
+    }
+    
+    // Card Sets page - show Home and Games
+    if (pathname.startsWith('/card-sets')) {
+      return (
+        <>
+          <Link to="/">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Home
+            </Button>
+          </Link>
+          <Link to="/games">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Games
+            </Button>
+          </Link>
+        </>
+      )
+    }
+    
+    // Deck page - show Home, Games, and Card Sets
+    if (pathname.startsWith('/decks')) {
+      return (
+        <>
+          <Link to="/">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Home
+            </Button>
+          </Link>
+          <Link to="/games">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Games
+            </Button>
+          </Link>
+          {user && (
+            <Link to="/card-sets">
+              <Button 
+                bg="white"
+                color="blue.600"
+                _hover={{ bg: 'gray.100' }}
+                _active={{ bg: 'gray.200' }}
+                size="sm"
+                fontWeight="medium"
+                px={4}
+                py={2}
+              >
+                Card Sets
+              </Button>
+            </Link>
+          )}
+        </>
+      )
+    }
+    
+
+    
+    // Auth page - show Home and Games
+    if (pathname.startsWith('/auth')) {
+      return (
+        <>
+          <Link to="/">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Home
+            </Button>
+          </Link>
+          <Link to="/games">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Games
+            </Button>
+          </Link>
+        </>
+      )
+    }
+    
+    // Default - show Home, Games, and Card Sets (if user is logged in)
+    return (
+      <>
+        <Link to="/">
+          <Button 
+            bg="white"
+            color="blue.600"
+            _hover={{ bg: 'gray.100' }}
+            _active={{ bg: 'gray.200' }}
+            size="sm"
+            fontWeight="medium"
+            px={4}
+            py={2}
+          >
+            Home
+          </Button>
+        </Link>
+        <Link to="/games">
+          <Button 
+            bg="white"
+            color="blue.600"
+            _hover={{ bg: 'gray.100' }}
+            _active={{ bg: 'gray.200' }}
+            size="sm"
+            fontWeight="medium"
+            px={4}
+            py={2}
+          >
+            Games
+          </Button>
+        </Link>
+        {user && (
+          <Link to="/card-sets">
+            <Button 
+              bg="white"
+              color="blue.600"
+              _hover={{ bg: 'gray.100' }}
+              _active={{ bg: 'gray.200' }}
+              size="sm"
+              fontWeight="medium"
+              px={4}
+              py={2}
+            >
+              Card Sets
+            </Button>
+          </Link>
+        )}
+      </>
+    )
+  }
 
   // Handle logout with success message
   const handleLogout = () => {
@@ -37,20 +295,7 @@ export default function App() {
               </Heading>
             </Link>
             <Flex align="center" gap={4}>
-              <Link to="/games">
-                <Button 
-                  bg="white"
-                  color="blue.600"
-                  _hover={{ bg: 'gray.100' }}
-                  _active={{ bg: 'gray.200' }}
-                  size="sm"
-                  fontWeight="medium"
-                  px={4}
-                  py={2}
-                >
-                  Games
-                </Button>
-              </Link>
+              {getNavigationButtons()}
               
               {!authLoading && (
                 user ? (

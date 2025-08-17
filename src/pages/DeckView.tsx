@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Box, 
   Container, 
@@ -257,43 +257,7 @@ export default function DeckView() {
   }
 
   return (
-    <Box minH="100vh" bg="gray.50">
-      {/* Header */}
-      <Box bg="#667eea" shadow="md">
-        <Container maxW="container.xl" py={4}>
-          <Flex justify="space-between" align="center">
-            <Box>
-              <Heading size="lg" color="white">
-                {deck?.name || 'Loading...'}
-              </Heading>
-              <Text color="white" opacity={0.9} fontSize="sm">
-                {deck?.cardSet?.title && deck?.cardSet?.user ? 
-                  `from ${deck.cardSet.title} by ${deck.cardSet.user.displayName || deck.cardSet.user.username}` : 
-                  'Loading...'}
-              </Text>
-            </Box>
-            <Flex gap={3}>
-              {deck?.cardSet?.id && (
-                <Link to={`/card-sets/${deck.cardSet.id}`}>
-                  <Button 
-                    bg="white"
-                    color="blue.600"
-                    _hover={{ bg: 'gray.100' }}
-                    _active={{ bg: 'gray.200' }}
-                    size="sm"
-                    fontWeight="medium"
-                    px={4}
-                    py={2}
-                  >
-                    Back to Card Set
-                  </Button>
-                </Link>
-              )}
-            </Flex>
-          </Flex>
-        </Container>
-      </Box>
-
+    <Box bg="gray.50">
       {/* Content */}
       {deck && (
         <Box py={16}>

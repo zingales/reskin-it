@@ -197,57 +197,23 @@ export default function CardSetView() {
   }
 
   return (
-    <Box minH="100vh" bg="gray.50">
-      {/* Header */}
-      <Box bg="#667eea" shadow="md">
-        <Container maxW="container.xl" py={4}>
-          <Flex justify="space-between" align="center">
-            <Box>
-              <Heading size="lg" color="white">
-                {cardSet.title}
-              </Heading>
-              <Text color="white" opacity={0.9} fontSize="sm">
-                by {cardSet.user.displayName || cardSet.user.username}
-              </Text>
-            </Box>
-            <Flex gap={3}>
-              {isOwner && (
-                <Button
-                  onClick={() => setShowCreateDeck(true)}
-                  bg="white"
-                  color="blue.600"
-                  _hover={{ bg: 'gray.100' }}
-                  _active={{ bg: 'gray.200' }}
-                  size="sm"
-                  fontWeight="medium"
-                  px={4}
-                  py={2}
-                >
-                  Add Deck
-                </Button>
-              )}
-              <Link to="/card-sets">
-                <Button 
-                  bg="white"
-                  color="blue.600"
-                  _hover={{ bg: 'gray.100' }}
-                  _active={{ bg: 'gray.200' }}
-                  size="sm"
-                  fontWeight="medium"
-                  px={4}
-                  py={2}
-                >
-                  Back to Card Sets
-                </Button>
-              </Link>
-            </Flex>
-          </Flex>
-        </Container>
-      </Box>
-
+    <Box bg="gray.50">
       {/* Content */}
       <Box py={16}>
         <Container maxW="container.xl">
+          {/* Action Buttons */}
+          {isOwner && (
+            <Box mb={6} textAlign="right">
+              <Button
+                onClick={() => setShowCreateDeck(true)}
+                colorScheme="blue"
+                size="md"
+              >
+                Add Deck
+              </Button>
+            </Box>
+          )}
+          
           {/* Card Set Details */}
           <Box mb={12}>
             <Flex gap={8} direction={{ base: 'column', lg: 'row' }}>

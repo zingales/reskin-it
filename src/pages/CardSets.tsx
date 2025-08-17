@@ -7,10 +7,8 @@ import {
   Spinner,
   Center,
   Button,
-  Flex,
   SimpleGrid
 } from '@chakra-ui/react'
-import { Link } from 'react-router-dom'
 import { CardSetViewer } from '../components/CardSetViewer'
 import { CreateCardSet } from '../components/CreateCardSet'
 import { useAuth } from '../contexts/AuthContext'
@@ -89,49 +87,7 @@ export default function CardSets() {
   }
 
   return (
-    <Box minH="100vh" bg="gray.50">
-      {/* Header */}
-      <Box bg="#667eea" shadow="md">
-        <Container maxW="container.xl" py={4}>
-          <Flex justify="space-between" align="center">
-            <Heading size="lg" color="white">
-              Card Sets
-            </Heading>
-            <Flex gap={3}>
-              {user && !showCreateForm && (
-                <Button
-                  onClick={() => setShowCreateForm(true)}
-                  bg="white"
-                  color="blue.600"
-                  _hover={{ bg: 'gray.100' }}
-                  _active={{ bg: 'gray.200' }}
-                  size="sm"
-                  fontWeight="medium"
-                  px={4}
-                  py={2}
-                >
-                  Create New Set
-                </Button>
-              )}
-              <Link to="/">
-                <Button 
-                  bg="white"
-                  color="blue.600"
-                  _hover={{ bg: 'gray.100' }}
-                  _active={{ bg: 'gray.200' }}
-                  size="sm"
-                  fontWeight="medium"
-                  px={4}
-                  py={2}
-                >
-                  Back to Home
-                </Button>
-              </Link>
-            </Flex>
-          </Flex>
-        </Container>
-      </Box>
-
+    <Box bg="gray.50">
       {/* Content */}
       <Box py={16}>
         <Container maxW="container.xl">
@@ -161,6 +117,19 @@ export default function CardSets() {
             </Box>
           ) : (
             <>
+              {/* Action Buttons */}
+              {user && (
+                <Box mb={6} textAlign="right">
+                  <Button
+                    onClick={() => setShowCreateForm(true)}
+                    colorScheme="blue"
+                    size="md"
+                  >
+                    Create New Set
+                  </Button>
+                </Box>
+              )}
+              
               {/* Section Header */}
               <Box textAlign="center" mb={12}>
                 <Heading 

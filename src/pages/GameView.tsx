@@ -9,10 +9,9 @@ import {
   Button,
   Flex,
   VStack,
-  HStack,
   Badge
 } from '@chakra-ui/react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import CardDefinitionViewer from '../components/CardDefinitionViewer'
 import DiscoveryCardDefinitionViewer from '../components/DiscoveryCardDefinitionViewer'
 import type { Game } from '../types/Game'
@@ -153,53 +152,7 @@ export default function GameView() {
   }
 
   return (
-    <Box minH="100vh" bg="gray.50">
-      {/* Header */}
-      <Box bg="#667eea" shadow="md">
-        <Container maxW="container.xl" py={4}>
-          <Flex justify="space-between" align="center">
-            <VStack align="start" gap={1}>
-              <Heading size="lg" color="white">
-                {game.name}
-              </Heading>
-              <Text color="blue.100" fontSize="sm">
-                {game.summary}
-              </Text>
-            </VStack>
-            <HStack gap={3}>
-              <Link to="/games">
-                <Button 
-                  bg="white"
-                  color="blue.600"
-                  _hover={{ bg: 'gray.100' }}
-                  _active={{ bg: 'gray.200' }}
-                  size="sm"
-                  fontWeight="medium"
-                  px={4}
-                  py={2}
-                >
-                  Back to Games
-                </Button>
-              </Link>
-              <Link to="/">
-                <Button 
-                  bg="white"
-                  color="blue.600"
-                  _hover={{ bg: 'gray.100' }}
-                  _active={{ bg: 'gray.200' }}
-                  size="sm"
-                  fontWeight="medium"
-                  px={4}
-                  py={2}
-                >
-                  Home
-                </Button>
-              </Link>
-            </HStack>
-          </Flex>
-        </Container>
-      </Box>
-
+    <Box bg="gray.50">
       {/* Content */}
       <Container maxW="container.xl" py={8}>
         <Flex gap={8}>

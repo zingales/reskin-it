@@ -7,11 +7,10 @@ import {
   Spinner,
   Center,
   Button,
-  Flex,
   SimpleGrid,
   VStack
 } from '@chakra-ui/react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import type { Game } from '../types/Game'
 import { toaster } from '../components/ui/toaster'
 
@@ -62,32 +61,7 @@ export default function Games() {
   }
 
   return (
-    <Box minH="100vh" bg="gray.50">
-      {/* Header */}
-      <Box bg="#667eea" shadow="md">
-        <Container maxW="container.xl" py={4}>
-          <Flex justify="space-between" align="center">
-            <Heading size="lg" color="white">
-              Games
-            </Heading>
-            <Link to="/">
-              <Button 
-                bg="white"
-                color="blue.600"
-                _hover={{ bg: 'gray.100' }}
-                _active={{ bg: 'gray.200' }}
-                size="sm"
-                fontWeight="medium"
-                px={4}
-                py={2}
-              >
-                Back to Home
-              </Button>
-            </Link>
-          </Flex>
-        </Container>
-      </Box>
-
+    <Box bg="gray.50">
       {/* Content */}
       <Box py={16}>
         <Container maxW="container.xl">
