@@ -12,6 +12,7 @@ import {
 import { Link } from 'react-router-dom'
 import TokenEngineCardDefinitionViewer from '../components/CardDefinitionViewer'
 import type { TokenEngineCardDefinition } from '../types/CardDefinition'
+import { toaster } from '../components/ui/toaster'
 
 export default function CardDefinitions() {
   const [cardDefinitions, setCardDefinitions] = useState<TokenEngineCardDefinition[]>([])
@@ -41,6 +42,11 @@ export default function CardDefinitions() {
       } catch (err) {
         console.error('Error fetching card definitions:', err)
         setError('Failed to load card definitions. Please try again later.')
+        toaster.create({
+          title: 'Error',
+          description: 'Failed to load card definitions. Please try again later.',
+          type: 'error'
+        })
       } finally {
         setLoading(false)
       }

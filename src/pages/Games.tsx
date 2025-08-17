@@ -13,6 +13,7 @@ import {
 } from '@chakra-ui/react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Game } from '../types/Game'
+import { toaster } from '../components/ui/toaster'
 
 export default function Games() {
   const [games, setGames] = useState<Game[]>([])
@@ -43,6 +44,11 @@ export default function Games() {
       } catch (err) {
         console.error('Error fetching games:', err)
         setError('Failed to load games. Please try again later.')
+        toaster.create({
+          title: 'Error',
+          description: 'Failed to load games. Please try again later.',
+          type: 'error'
+        })
       } finally {
         setLoading(false)
       }

@@ -67,6 +67,11 @@ function App() {
       } catch (err) {
         console.error('Error fetching card sets:', err)
         setError('Failed to load card sets. Please try again later.')
+        toaster.create({
+          title: 'Error',
+          description: 'Failed to load card sets. Please try again later.',
+          type: 'error'
+        })
       } finally {
         setLoading(false)
       }

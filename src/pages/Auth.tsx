@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Login } from '../components/Login'
 import { Register } from '../components/Register'
+import { Toaster } from '../components/ui/toaster'
 
 export const Auth: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true)
@@ -47,6 +48,9 @@ export const Auth: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {/* Global Toaster */}
+      <Toaster />
     </div>
   )
 }

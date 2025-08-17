@@ -270,7 +270,7 @@ async function main() {
   const tokenEngineCardSet = await prisma.cardSet.upsert({
     where: { 
       title_userId: {
-        title: "TokenEngine Example Deck",
+        title: "TokenEngine Starter Set",
         userId: testUser.id
       }
     },
@@ -289,6 +289,10 @@ async function main() {
   })
 
   console.log('✅ TokenEngine starter card set upserted')
+
+  // Seed TokenEngineCardDefinitions from CSV FIRST
+  await seedTokenEngineCardDefinitions()
+  await seedTokenEngineDiscoveryCardDefinitions()
 
   // Get the GameCardDefinition IDs
   const tokenCardDefinition = await prisma.gameCardDefinition.findFirst({
@@ -409,10 +413,6 @@ async function main() {
   })
 
   console.log('✅ TokenEngine decks created: Discovery Cards, Tier 1, Tier 2, and Tier 3 Token Cards')
-
-  // Seed TokenEngineCardDefinitions from CSV
-  await seedTokenEngineCardDefinitions()
-  await seedTokenEngineDiscoveryCardDefinitions()
 
   console.log('✅ Database seeding completed successfully!')
 }
