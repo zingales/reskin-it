@@ -4,22 +4,22 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "prisma" : "cp prisma/schema.prisma api/schema.prisma && prisma generate --schema=./api/schema.prisma && prisma generate",
     "build": "vite build && npm run check",
     "check": "tsc -b && eslint .",
-    "preview": "vite preview",
-    "seed": "npx tsx prisma/seed.ts",
-    "server": "npx tsx api/index.ts",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate deploy",
-    "db:seed": "npm run seed",
-    "db:studio": "prisma studio",
-    "postgres:start": "docker-compose up -d",
-    "postgres:stop": "docker-compose down",
-    "dev:full": "npm run postgres:start && npm run db:push && npm run db:seed && concurrently \"npm run dev\" \"npm run server\"",
-    "dev:db": "npm run postgres:start && npm run db:push && npm run db:seed",
-    "postinstall": "prisma generate"
+
+    "local:frontend": "vite",
+    "local:backend": "npx tsx api/index.ts",
+    
+
+    "local:db:migrate": "prisma migrate deploy",
+    "local:db:seed": "npx tsx prisma/seed.ts",
+    "local:db:studio": "prisma studio",
+    "local:db:update": "npm run local:db:start && npm run prisma && npm run local:db:migrate && npm run local:db:seed",
+    "local:db:start": "docker-compose up -d",
+    "local:db:stop": "docker-compose down",
+    "local:full": "npm run local:db:start && concurrently \"npm run local:frontend\" \"npm run local:backend\""
+    
   },
   "dependencies": {
     "@chakra-ui/react": "^3.22.0",
