@@ -1,4 +1,4 @@
-name: Deploy to Vercel
+name: Deploy to Production (https://reskin-it.vercel.app/)
 
 on:
   push:
@@ -92,9 +92,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     needs: deploy
-    strategy:
-      matrix:
-        operation: [migrate, seed]
     
     steps:
       - name: Checkout code
@@ -127,7 +124,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           
       - name: Run database migrations
-        if: matrix.operation == 'migrate'
         run: |
           echo "🔄 Running Prisma migrations..."
           
@@ -142,7 +138,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           
       - name: Seed database
-        if: matrix.operation == 'seed'
         run: |
           echo "🌱 Running seed script..."
           
