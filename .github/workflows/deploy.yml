@@ -91,24 +91,18 @@ jobs:
   database-setup:
     runs-on: ubuntu-latest
     environment: production
-    needs: deploy
+    needs: [deploy, build]
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          name: build-artifacts
+          path: ./
           
-      - name: Install dependencies
-        run: npm ci --include=dev
-        
-      - name: Generate Prisma client
-        run: npm run prisma
-        
       - name: Test database connection
         run: |
           echo "🔍 Testing database connection..."
@@ -142,7 +136,7 @@ jobs:
           echo "🌱 Running seed script..."
           
           # Run seed script with timeout
-          timeout 120s npm run seed || {
+          timeout 120s npm run local:db:seed || {
             echo "❌ Seeding failed or timed out"
             exit 1
           }
