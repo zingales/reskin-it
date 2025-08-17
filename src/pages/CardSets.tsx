@@ -99,16 +99,9 @@ export default function CardSets() {
                   onClick={handleCancelCreate}
                   variant="outline"
                   size="sm"
-                  mb={4}
                 >
                   ← Back to Card Sets
                 </Button>
-                <Heading size="xl" color="gray.800" mb={2}>
-                  Create New Card Set
-                </Heading>
-                <Text color="gray.600">
-                  Design your own custom card set with multiple decks.
-                </Text>
               </Box>
               <CreateCardSet 
                 onCardSetCreated={handleCardSetCreated}
@@ -167,21 +160,12 @@ export default function CardSets() {
               ) : cardSets.length === 0 ? (
                 <Center py={20}>
                   <Box textAlign="center">
-                    <Text fontSize="lg" color="gray.600" mb={6}>
+                    <Text fontSize="lg" color="gray.600">
                       {user 
                         ? 'You haven\'t created any card sets yet.'
                         : 'No card sets available yet.'
                       }
                     </Text>
-                    {user && (
-                      <Button
-                        onClick={() => setShowCreateForm(true)}
-                        colorScheme="blue"
-                        size="lg"
-                      >
-                        Create Your First Card Set
-                      </Button>
-                    )}
                   </Box>
                 </Center>
               ) : (
