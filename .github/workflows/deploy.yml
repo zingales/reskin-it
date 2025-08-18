@@ -52,9 +52,6 @@ jobs:
           name: build-artifacts
           path: |
             dist/
-            node_modules/.prisma/
-            node_modules/@prisma/
-            node_modules/prisma/
             prisma/
           retention-days: 1
           
@@ -99,12 +96,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: build-artifacts
-          path: ./
+          node-version: '22'
+          cache: 'npm'
           
+      - name: Install minimal dependencies
+        run: npm install @prisma/client prisma
+        
+      - name: Generate Prisma client
+        run: npm run prisma
+        
       - name: Test database connection
         run: |
           echo "🔍 Testing database connection..."
