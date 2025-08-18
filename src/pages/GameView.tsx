@@ -7,11 +7,19 @@ import {
   Spinner,
   Center,
   Button,
-  Flex,
   VStack,
-  Badge
+  Badge,
+  SkipNavContent
 } from '@chakra-ui/react'
 import { useParams, useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import { Prose } from '../components/ui/prose'
+import {
+  AccordionRoot,
+  AccordionItem,
+  AccordionItemTrigger,
+  AccordionItemContent
+} from '../components/ui/accordion'
 import CardDefinitionViewer from '../components/CardDefinitionViewer'
 import DiscoveryCardDefinitionViewer from '../components/DiscoveryCardDefinitionViewer'
 import type { Game } from '../types/Game'
@@ -26,7 +34,7 @@ export default function GameView() {
   const [cardDefinitions, setCardDefinitions] = useState<CardDefinitionData>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState<'rules' | string>('rules')
+
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -98,30 +106,6 @@ export default function GameView() {
     fetchGameData()
   }, [id])
 
-  const renderMarkdownRules = (rules: string) => {
-    // Simple markdown rendering for headers and lists
-    const lines = rules.split('\n')
-    return lines.map((line, index) => {
-      const trimmedLine = line.trim()
-      
-      if (trimmedLine.startsWith('# ')) {
-        return <Heading key={index} size="lg" mt={6} mb={3} color="gray.800" textAlign="center">{trimmedLine.substring(2)}</Heading>
-      } else if (trimmedLine.startsWith('## ')) {
-        return <Heading key={index} size="md" mt={4} mb={2} color="gray.700" textAlign="center">{trimmedLine.substring(3)}</Heading>
-      } else if (trimmedLine.startsWith('### ')) {
-        return <Heading key={index} size="sm" mt={3} mb={2} color="gray.600" textAlign="center">{trimmedLine.substring(4)}</Heading>
-      } else if (trimmedLine.startsWith('- ')) {
-        return <Text key={index} color="gray.600" textAlign="left">• {trimmedLine.substring(2)}</Text>
-      } else if (trimmedLine.startsWith('1. ')) {
-        return <Text key={index} color="gray.600" textAlign="left">{trimmedLine}</Text>
-      } else if (trimmedLine === '') {
-        return <Box key={index} h={2} />
-      } else {
-        return <Text key={index} color="gray.600" lineHeight="tall" textAlign="left">{trimmedLine}</Text>
-      }
-    })
-  }
-
   if (loading) {
     return (
       <Box minH="100vh" bg="gray.50">
@@ -155,103 +139,89 @@ export default function GameView() {
     <Box bg="gray.50">
       {/* Content */}
       <Container maxW="container.xl" py={8}>
-        <Flex gap={8}>
-          {/* Sidebar Navigation */}
-          <Box w="250px" flexShrink={0}>
-            <VStack gap={2} align="stretch">
-              <Button
-                variant={activeSection === 'rules' ? 'solid' : 'ghost'}
-                colorScheme="blue"
-                justifyContent="start"
-                onClick={() => setActiveSection('rules')}
-                size="lg"
+        <SkipNavContent />
+        
+        {/* Main Content with Accordion */}
+        <Box bg="white" borderRadius="lg" shadow="md" p={8}>
+          <Heading size="lg" mb={6} color="gray.800">
+            {game.name}
+          </Heading>
+          
+          <AccordionRoot collapsible defaultValue={['rules']}>
+            {/* Rules Section */}
+            <AccordionItem value="rules">
+              <AccordionItemTrigger 
+                bg="gray.50"
+                _hover={{ bg: 'gray.100' }}
+                borderRadius="md"
+                mb={2}
+                px={6}
+                py={4}
+                w="100%"
+                fontWeight="semibold"
+                fontSize="lg"
+                indicatorPlacement="end"
               >
-                📖 Rules
-              </Button>
-              
-              {/* Card Definition Tables */}
-              {game.cardDefinitionTables?.map((cardDefTable) => {
-                const cards = cardDefinitions[cardDefTable.tableName] || []
-                const hasCards = cards.length > 0
-                
-                return (
-                  <Button
-                    key={cardDefTable.id}
-                    variant={activeSection === cardDefTable.tableName ? 'solid' : 'ghost'}
-                    colorScheme="blue"
-                    justifyContent="start"
-                    onClick={() => setActiveSection(cardDefTable.tableName)}
-                    size="lg"
-                    disabled={!hasCards}
-                  >
-                    🃏 {cardDefTable.name}
-                    {hasCards && (
-                      <Badge ml={2} colorScheme="green" borderRadius="full">
-                        {cards.length}
-                      </Badge>
-                    )}
-                  </Button>
-                )
-              })}
-            </VStack>
-          </Box>
-
-          {/* Main Content */}
-          <Box flex={1} bg="white" borderRadius="lg" shadow="md" p={8}>
-            {activeSection === 'rules' ? (
-              <Box>
-                <Heading size="lg" mb={6} color="gray.800">
-                  Game Rules
-                </Heading>
+                📖 Game Rules
+              </AccordionItemTrigger>
+              <AccordionItemContent pb={6} px={6}>
                 <Box 
                   bg="gray.50" 
                   p={6} 
                   borderRadius="md"
-                  maxH="70vh"
-                  overflowY="auto"
                 >
-                  {renderMarkdownRules(game.rules)}
+                  <Prose>
+                    <ReactMarkdown>
+                      {game.rules}
+                    </ReactMarkdown>
+                  </Prose>
                 </Box>
-              </Box>
-            ) : (
-              <Box>
-                {(() => {
-                  const selectedCardDefTable = game.cardDefinitionTables?.find(
-                    table => table.tableName === activeSection
-                  )
-                  
-                  if (!selectedCardDefTable) {
-                    return (
-                      <Center py={12}>
-                        <VStack gap={4}>
-                          <Text color="gray.500" fontSize="lg">
-                            Card definition table not found.
-                          </Text>
-                        </VStack>
-                      </Center>
-                    )
-                  }
-                  
-                  const cards = cardDefinitions[selectedCardDefTable.tableName] || []
-                  
-                  return (
+              </AccordionItemContent>
+            </AccordionItem>
+            
+            {/* Card Definition Tables */}
+            {game.cardDefinitionTables?.map((cardDefTable) => {
+              const cards = cardDefinitions[cardDefTable.tableName] || []
+              const hasCards = cards.length > 0
+              
+              return (
+                <AccordionItem key={cardDefTable.id} value={cardDefTable.tableName}>
+                  <AccordionItemTrigger 
+                    bg="gray.50"
+                    _hover={{ bg: 'gray.100' }}
+                    borderRadius="md"
+                    mb={2}
+                    disabled={!hasCards}
+                    opacity={hasCards ? 1 : 0.6}
+                    px={6}
+                    py={4}
+                    w="100%"
+                    fontWeight="semibold"
+                    fontSize="lg"
+                    indicatorPlacement="end"
+                  >
+                    🃏 {cardDefTable.name}
+                    {hasCards && (
+                      <Badge ml={3} colorScheme="green" borderRadius="full" fontSize="sm">
+                        {cards.length} cards
+                      </Badge>
+                    )}
+                  </AccordionItemTrigger>
+                  <AccordionItemContent pb={6} px={6}>
                     <Box>
-                      <Heading size="lg" mb={6} color="gray.800">
-                        {selectedCardDefTable.name}
-                      </Heading>
-                      <Text color="gray.600" mb={6} fontSize="md">
-                        {selectedCardDefTable.description}
+                      <Text color="gray.600" mb={4} fontSize="md">
+                        {cardDefTable.description}
                       </Text>
                       
                       {cards.length > 0 ? (
                         <Box 
-                          maxH="70vh" 
+                          maxH="60vh" 
                           overflowY="auto"
                           border="1px solid"
                           borderColor="gray.200"
                           borderRadius="md"
                         >
-                          {selectedCardDefTable.tableName === 'TokenEngineDiscoveryCardDefinition' ? (
+                          {cardDefTable.tableName === 'TokenEngineDiscoveryCardDefinition' ? (
                             <DiscoveryCardDefinitionViewer cardDefinitions={cards as TokenEngineDiscoveryCardDefinition[]} />
                           ) : (
                             <CardDefinitionViewer cardDefinitions={cards as TokenEngineCardDefinition[]} />
@@ -261,7 +231,7 @@ export default function GameView() {
                         <Center py={12}>
                           <VStack gap={4}>
                             <Text color="gray.500" fontSize="lg">
-                              No cards available for {selectedCardDefTable.name}.
+                              No cards available for {cardDefTable.name}.
                             </Text>
                             <Text color="gray.400" fontSize="md">
                               Cards will be added soon!
@@ -270,12 +240,12 @@ export default function GameView() {
                         </Center>
                       )}
                     </Box>
-                  )
-                })()}
-              </Box>
-            )}
-          </Box>
-        </Flex>
+                  </AccordionItemContent>
+                </AccordionItem>
+              )
+            })}
+          </AccordionRoot>
+        </Box>
       </Container>
     </Box>
   )
