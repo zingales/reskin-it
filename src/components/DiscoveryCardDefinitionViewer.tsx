@@ -1,9 +1,29 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { 
   Box, 
   Text, 
   Grid,
+  Checkbox,
+  ActionBar,
+  EmptyState,
+  Button,
+  HStack,
+  VStack,
+  Badge,
+  Input
 } from '@chakra-ui/react'
+import { 
+  useReactTable, 
+  getCoreRowModel, 
+  getSortedRowModel, 
+  getFilteredRowModel,
+  createColumnHelper,
+  flexRender,
+  type SortingState,
+  type ColumnFiltersState,
+  type RowSelectionState
+} from '@tanstack/react-table'
+import { HiChevronUp, HiChevronDown, HiChevronUpDown } from 'react-icons/hi2'
 import type { TokenType, TokenEngineDiscoveryCardDefinition } from '../types/CardDefinition'
 
 interface DiscoveryCardDefinitionViewerProps {
@@ -11,21 +31,24 @@ interface DiscoveryCardDefinitionViewerProps {
   selectedCardIds?: number[]
   onCardSelectionChange?: (cardId: number, isSelected: boolean) => void
   allowSelection?: boolean
+  onSaveEdits?: (selectedIds: number[]) => void
 }
+
+// Column helper for type safety
+const columnHelper = createColumnHelper<TokenEngineDiscoveryCardDefinition>()
 
 export default function DiscoveryCardDefinitionViewer({ 
   cardDefinitions, 
   selectedCardIds = [], 
   onCardSelectionChange,
-  allowSelection = false 
+  allowSelection = false,
+  onSaveEdits
 }: DiscoveryCardDefinitionViewerProps) {
-  const [filteredCards, setFilteredCards] = useState<TokenEngineDiscoveryCardDefinition[]>(cardDefinitions)
-  const [sortConfig, setSortConfig] = useState<{
-    key: string | null
-    direction: 'asc' | 'desc'
-  }>({ key: null, direction: 'asc' })
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [filters, setFilters] = useState({
-    showSelectedOnly: false,
     minPoints: 0,
     maxPoints: 5,
     minWhiteCost: 0,
@@ -40,90 +63,7 @@ export default function DiscoveryCardDefinitionViewer({
     maxBlackCost: 7
   })
 
-  useEffect(() => {
-    let filtered = cardDefinitions
-
-    // Filter by selection (only if selection is allowed)
-    if (allowSelection && filters.showSelectedOnly) {
-      filtered = filtered.filter(card => selectedCardIds.includes(card.id))
-    }
-
-    // Filter by points range
-    filtered = filtered.filter(card => 
-      card.points >= filters.minPoints && card.points <= filters.maxPoints
-    )
-
-    // Filter by cost ranges
-    filtered = filtered.filter(card => {
-      const cost = parseCost(card.cost)
-      return (
-        cost.WHITE >= filters.minWhiteCost && cost.WHITE <= filters.maxWhiteCost &&
-        cost.BLUE >= filters.minBlueCost && cost.BLUE <= filters.maxBlueCost &&
-        cost.GREEN >= filters.minGreenCost && cost.GREEN <= filters.maxGreenCost &&
-        cost.RED >= filters.minRedCost && cost.RED <= filters.maxRedCost &&
-        cost.BLACK >= filters.minBlackCost && cost.BLACK <= filters.maxBlackCost
-      )
-    })
-
-    // Apply sorting
-    if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let aValue: number | string | boolean
-        let bValue: number | string | boolean
-
-        switch (sortConfig.key) {
-          case 'selected':
-            // Sort by selection status (selected cards first)
-            aValue = selectedCardIds.includes(a.id)
-            bValue = selectedCardIds.includes(b.id)
-            break
-          case 'id':
-            aValue = a.id
-            bValue = b.id
-            break
-          case 'points':
-            aValue = a.points
-            bValue = b.points
-            break
-          case 'whiteCost':
-            aValue = parseCost(a.cost).WHITE
-            bValue = parseCost(b.cost).WHITE
-            break
-          case 'blueCost':
-            aValue = parseCost(a.cost).BLUE
-            bValue = parseCost(b.cost).BLUE
-            break
-          case 'greenCost':
-            aValue = parseCost(a.cost).GREEN
-            bValue = parseCost(b.cost).GREEN
-            break
-          case 'redCost':
-            aValue = parseCost(a.cost).RED
-            bValue = parseCost(b.cost).RED
-            break
-          case 'blackCost':
-            aValue = parseCost(a.cost).BLACK
-            bValue = parseCost(b.cost).BLACK
-            break
-          default:
-            aValue = 0
-            bValue = 0
-            return 0
-        }
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1
-        }
-        return 0
-      })
-    }
-
-    setFilteredCards(filtered)
-  }, [cardDefinitions, filters, sortConfig, allowSelection, selectedCardIds])
-
+  // Parse cost helper function
   const parseCost = (cost: string | Map<TokenType, number>): Record<TokenType, number> => {
     if (typeof cost === 'string') {
       try {
@@ -132,7 +72,6 @@ export default function DiscoveryCardDefinitionViewer({
         return { WHITE: 0, BLUE: 0, GREEN: 0, RED: 0, BLACK: 0 }
       }
     } else {
-      // Convert Map to Record
       const result: Record<TokenType, number> = { WHITE: 0, BLUE: 0, GREEN: 0, RED: 0, BLACK: 0 }
       cost.forEach((value, key) => {
         result[key] = value
@@ -141,20 +80,192 @@ export default function DiscoveryCardDefinitionViewer({
     }
   }
 
-  const handleSort = (key: string) => {
-    setSortConfig(prev => ({
-      key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
-    }))
-  }
+  // Sync row selection with selectedCardIds
+  useEffect(() => {
+    const newRowSelection: RowSelectionState = {}
+    cardDefinitions.forEach((card, index) => {
+      if (selectedCardIds.includes(card.id)) {
+        newRowSelection[index] = true
+      }
+    })
+    setRowSelection(newRowSelection)
+  }, [selectedCardIds, cardDefinitions])
 
-  const getSortIcon = (key: string) => {
-    if (sortConfig.key !== key) {
-      return '↕️'
+  // Define columns
+  const columns = useMemo(() => {
+    const cols = [
+      // Selection column (if allowed)
+      ...(allowSelection ? [
+        columnHelper.display({
+          id: 'select',
+          header: ({ table }) => (
+            <Checkbox.Root
+              checked={table.getIsAllPageRowsSelected()}
+              onChange={table.getToggleAllPageRowsSelectedHandler()}
+            >
+              <Checkbox.Control />
+            </Checkbox.Root>
+          ),
+          cell: ({ row }) => (
+            <Checkbox.Root
+              checked={row.getIsSelected()}
+              onChange={row.getToggleSelectedHandler()}
+            >
+              <Checkbox.Control />
+            </Checkbox.Root>
+          ),
+          size: 50,
+        })
+      ] : []),
+      
+      // ID column
+      columnHelper.accessor('id', {
+        header: 'ID',
+        cell: ({ getValue }) => `#${getValue()}`,
+        size: 80,
+      }),
+      
+      // Points column
+      columnHelper.accessor('points', {
+        header: 'Points',
+        cell: ({ getValue }) => (
+          <Badge colorScheme="blue" variant="subtle">
+            {getValue()}
+          </Badge>
+        ),
+        size: 100,
+      }),
+      
+      // Cost columns
+      columnHelper.accessor('cost', {
+        id: 'whiteCost',
+        header: 'White',
+        cell: ({ getValue }) => {
+          const cost = parseCost(getValue())
+          return cost.WHITE || 0
+        },
+        size: 80,
+      }),
+      
+      columnHelper.accessor('cost', {
+        id: 'blueCost',
+        header: 'Blue',
+        cell: ({ getValue }) => {
+          const cost = parseCost(getValue())
+          return cost.BLUE || 0
+        },
+        size: 80,
+      }),
+      
+      columnHelper.accessor('cost', {
+        id: 'greenCost',
+        header: 'Green',
+        cell: ({ getValue }) => {
+          const cost = parseCost(getValue())
+          return cost.GREEN || 0
+        },
+        size: 80,
+      }),
+      
+      columnHelper.accessor('cost', {
+        id: 'redCost',
+        header: 'Red',
+        cell: ({ getValue }) => {
+          const cost = parseCost(getValue())
+          return cost.RED || 0
+        },
+        size: 80,
+      }),
+      
+      columnHelper.accessor('cost', {
+        id: 'blackCost',
+        header: 'Black',
+        cell: ({ getValue }) => {
+          const cost = parseCost(getValue())
+          return cost.BLACK || 0
+        },
+        size: 80,
+      }),
+    ]
+    
+    return cols
+  }, [allowSelection])
+
+  // Custom filter function for range filters
+  const filteredData = useMemo(() => {
+    return cardDefinitions.filter(card => {
+      const cost = parseCost(card.cost)
+      
+      // Filter by points range
+      if (card.points < filters.minPoints || card.points > filters.maxPoints) {
+        return false
+      }
+      
+      // Filter by cost ranges
+      if (cost.WHITE < filters.minWhiteCost || cost.WHITE > filters.maxWhiteCost) return false
+      if (cost.BLUE < filters.minBlueCost || cost.BLUE > filters.maxBlueCost) return false
+      if (cost.GREEN < filters.minGreenCost || cost.GREEN > filters.maxGreenCost) return false
+      if (cost.RED < filters.minRedCost || cost.RED > filters.maxRedCost) return false
+      if (cost.BLACK < filters.minBlackCost || cost.BLACK > filters.maxBlackCost) return false
+      
+      return true
+    })
+  }, [cardDefinitions, filters])
+
+  // Create table instance
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    state: {
+      sorting,
+      columnFilters,
+      globalFilter,
+      rowSelection,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    enableRowSelection: allowSelection,
+    enableMultiRowSelection: allowSelection,
+  })
+
+  // Handle row selection changes
+  useEffect(() => {
+    if (onCardSelectionChange) {
+      const selectedRows = table.getFilteredSelectedRowModel().rows
+      const selectedIds = selectedRows.map(row => row.original.id)
+      
+      // Find cards that were deselected
+      const deselectedIds = selectedCardIds.filter(id => !selectedIds.includes(id))
+      // Find cards that were newly selected
+      const newlySelectedIds = selectedIds.filter(id => !selectedCardIds.includes(id))
+      
+      // Notify parent of changes
+      deselectedIds.forEach(id => onCardSelectionChange(id, false))
+      newlySelectedIds.forEach(id => onCardSelectionChange(id, true))
     }
-    return sortConfig.direction === 'asc' ? '▴' : '▾'
+  }, [rowSelection, onCardSelectionChange, selectedCardIds, table])
+
+  // Custom sort icon component
+  const SortIcon = ({ column }: { column: { getCanSort: () => boolean; getIsSorted: () => false | 'asc' | 'desc' } }) => {
+    if (!column.getCanSort()) return null
+    
+    const isSorted = column.getIsSorted()
+    
+    if (isSorted === 'asc') {
+      return <HiChevronUp size={16} />
+    } else if (isSorted === 'desc') {
+      return <HiChevronDown size={16} />
+    } else {
+      return <HiChevronUpDown size={16} color="gray" />
+    }
   }
 
+  // Range Slider component
   const RangeSlider = ({ 
     label, 
     minValue, 
@@ -285,334 +396,231 @@ export default function DiscoveryCardDefinitionViewer({
     )
   }
 
+  const handleSaveEdits = () => {
+    if (onSaveEdits) {
+      const selectedRows = table.getFilteredSelectedRowModel().rows
+      const selectedIds = selectedRows.map(row => row.original.id)
+      onSaveEdits(selectedIds)
+    }
+  }
+
+  const handleClearSelection = () => {
+    if (onCardSelectionChange) {
+      selectedCardIds.forEach(id => onCardSelectionChange(id, false))
+    }
+  }
+
   return (
     <Box w="full">
+      {/* Action Bar for selection */}
+      {allowSelection && selectedCardIds.length > 0 && (
+        <ActionBar.Root>
+          <ActionBar.Positioner>
+            <ActionBar.Content>
+              <ActionBar.CloseTrigger />
+              <ActionBar.SelectionTrigger>
+                {selectedCardIds.length} selected
+              </ActionBar.SelectionTrigger>
+              <ActionBar.Separator />
+              <HStack gap={3}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleClearSelection}
+                >
+                  Clear Selection
+                </Button>
+                {onSaveEdits && (
+                  <Button
+                    size="sm"
+                    colorScheme="blue"
+                    onClick={handleSaveEdits}
+                  >
+                    Save Edits
+                  </Button>
+                )}
+              </HStack>
+            </ActionBar.Content>
+          </ActionBar.Positioner>
+        </ActionBar.Root>
+      )}
+
       {/* Filters */}
       <Box bg="white" rounded="lg" shadow="md" p={6} mb={6}>
         <Text fontSize="xl" fontWeight="semibold" mb={4}>Filters</Text>
         
-        {/* Points Range Slider */}
-        <Box mb={6}>
-          <RangeSlider
-            label="Points Range"
-            minValue={filters.minPoints}
-            maxValue={filters.maxPoints}
-            onMinChange={(value) => setFilters(prev => ({ ...prev, minPoints: value }))}
-            onMaxChange={(value) => setFilters(prev => ({ ...prev, maxPoints: value }))}
-            color="blue"
-            min={0}
-            max={5}
-          />
-        </Box>
-
-        {/* Selection Filter - Only show if selection is allowed */}
-        {allowSelection && (
-          <Box mb={6}>
-            <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>
-              Selection
-            </Text>
-            <Box display="flex" alignItems="center">
-              <input
-                type="checkbox"
-                id="show-selected-only"
-                checked={filters.showSelectedOnly}
-                onChange={(e) => {
-                  setFilters(prev => ({ ...prev, showSelectedOnly: e.target.checked }))
-                }}
-                style={{ marginRight: '8px' }}
-              />
-              <label 
-                htmlFor="show-selected-only"
-                style={{ 
-                  fontSize: '14px', 
-                  color: '#374151',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <Text
-                  fontSize="sm"
-                  color="blue.800"
-                  fontWeight="medium"
-                  whiteSpace="nowrap"
-                >
-                  Show Selected Only ({selectedCardIds.length})
-                </Text>
-              </label>
-            </Box>
+        <VStack gap={4} align="stretch">
+          {/* Global search */}
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" mb={2}>Search</Text>
+            <Input
+              placeholder="Search all columns..."
+              value={globalFilter ?? ''}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              size="sm"
+            />
           </Box>
-        )}
 
-        {/* Cost Filters */}
-        <Text fontSize="lg" fontWeight="semibold" mb={4}>Cost Filters</Text>
-        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
-          <RangeSlider
-            label="White Cost"
-            minValue={filters.minWhiteCost}
-            maxValue={filters.maxWhiteCost}
-            onMinChange={(value) => setFilters(prev => ({ ...prev, minWhiteCost: value }))}
-            onMaxChange={(value) => setFilters(prev => ({ ...prev, maxWhiteCost: value }))}
-            color="gray"
-          />
-          <RangeSlider
-            label="Blue Cost"
-            minValue={filters.minBlueCost}
-            maxValue={filters.maxBlueCost}
-            onMinChange={(value) => setFilters(prev => ({ ...prev, minBlueCost: value }))}
-            onMaxChange={(value) => setFilters(prev => ({ ...prev, maxBlueCost: value }))}
-            color="blue"
-          />
-          <RangeSlider
-            label="Green Cost"
-            minValue={filters.minGreenCost}
-            maxValue={filters.maxGreenCost}
-            onMinChange={(value) => setFilters(prev => ({ ...prev, minGreenCost: value }))}
-            onMaxChange={(value) => setFilters(prev => ({ ...prev, maxGreenCost: value }))}
-            color="green"
-          />
-          <RangeSlider
-            label="Red Cost"
-            minValue={filters.minRedCost}
-            maxValue={filters.maxRedCost}
-            onMinChange={(value) => setFilters(prev => ({ ...prev, minRedCost: value }))}
-            onMaxChange={(value) => setFilters(prev => ({ ...prev, maxRedCost: value }))}
-            color="red"
-          />
-          <RangeSlider
-            label="Black Cost"
-            minValue={filters.minBlackCost}
-            maxValue={filters.maxBlackCost}
-            onMinChange={(value) => setFilters(prev => ({ ...prev, minBlackCost: value }))}
-            onMaxChange={(value) => setFilters(prev => ({ ...prev, maxBlackCost: value }))}
-            color="gray"
-          />
-        </Grid>
+          {/* Range Filters */}
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
+            {/* Points Range Slider */}
+            <RangeSlider
+              label="Points Range"
+              minValue={filters.minPoints}
+              maxValue={filters.maxPoints}
+              onMinChange={(value) => setFilters(prev => ({ ...prev, minPoints: value }))}
+              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxPoints: value }))}
+              color="blue"
+              min={0}
+              max={5}
+            />
+            
+            {/* White Cost Range Slider */}
+            <RangeSlider
+              label="White Cost"
+              minValue={filters.minWhiteCost}
+              maxValue={filters.maxWhiteCost}
+              onMinChange={(value) => setFilters(prev => ({ ...prev, minWhiteCost: value }))}
+              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxWhiteCost: value }))}
+              color="gray"
+            />
+            
+            {/* Blue Cost Range Slider */}
+            <RangeSlider
+              label="Blue Cost"
+              minValue={filters.minBlueCost}
+              maxValue={filters.maxBlueCost}
+              onMinChange={(value) => setFilters(prev => ({ ...prev, minBlueCost: value }))}
+              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxBlueCost: value }))}
+              color="blue"
+            />
+            
+            {/* Green Cost Range Slider */}
+            <RangeSlider
+              label="Green Cost"
+              minValue={filters.minGreenCost}
+              maxValue={filters.maxGreenCost}
+              onMinChange={(value) => setFilters(prev => ({ ...prev, minGreenCost: value }))}
+              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxGreenCost: value }))}
+              color="green"
+            />
+            
+            {/* Red Cost Range Slider */}
+            <RangeSlider
+              label="Red Cost"
+              minValue={filters.minRedCost}
+              maxValue={filters.maxRedCost}
+              onMinChange={(value) => setFilters(prev => ({ ...prev, minRedCost: value }))}
+              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxRedCost: value }))}
+              color="red"
+            />
+            
+            {/* Black Cost Range Slider */}
+            <RangeSlider
+              label="Black Cost"
+              minValue={filters.minBlackCost}
+              maxValue={filters.maxBlackCost}
+              onMinChange={(value) => setFilters(prev => ({ ...prev, minBlackCost: value }))}
+              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxBlackCost: value }))}
+              color="gray"
+            />
+          </Grid>
+        </VStack>
       </Box>
 
-      {/* Results Count */}
+      {/* Results count */}
       <Box mb={4}>
         <Text color="gray.600">
-          Showing {filteredCards.length} of {cardDefinitions.length} discovery cards
+          Showing {filteredData.length} of {cardDefinitions.length} discovery cards
         </Text>
       </Box>
 
-      {/* Cards Table */}
+      {/* Table */}
       <Box bg="white" rounded="lg" shadow="md" overflow="hidden">
         <Box overflowX="auto">
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ backgroundColor: '#f9fafb' }}>
-              <tr>
-                {allowSelection && (
-                  <th 
-                    style={{ 
-                      padding: '12px 24px', 
-                      textAlign: 'center', 
-                      fontSize: '12px', 
-                      fontWeight: '500', 
-                      color: '#6b7280', 
-                      textTransform: 'uppercase', 
-                      letterSpacing: '0.05em',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      width: '50px'
-                    }}
-                    onClick={() => handleSort('selected')}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                  >
-                    Select {getSortIcon('selected')}
-                  </th>
-                )}
-                <th 
-                  style={{ 
-                    padding: '12px 24px', 
-                    textAlign: 'left', 
-                    fontSize: '12px', 
-                    fontWeight: '500', 
-                    color: '#6b7280', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                  onClick={() => handleSort('id')}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                >
-                  ID {getSortIcon('id')}
-                </th>
-                <th 
-                  style={{ 
-                    padding: '12px 24px', 
-                    textAlign: 'left', 
-                    fontSize: '12px', 
-                    fontWeight: '500', 
-                    color: '#6b7280', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                  onClick={() => handleSort('points')}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                >
-                  Points {getSortIcon('points')}
-                </th>
-                <th 
-                  style={{ 
-                    padding: '12px 24px', 
-                    textAlign: 'left', 
-                    fontSize: '12px', 
-                    fontWeight: '500', 
-                    color: '#6b7280', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                  onClick={() => handleSort('whiteCost')}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                >
-                  White{getSortIcon('whiteCost')}
-                </th>
-                <th 
-                  style={{ 
-                    padding: '12px 24px', 
-                    textAlign: 'left', 
-                    fontSize: '12px', 
-                    fontWeight: '500', 
-                    color: '#6b7280', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                  onClick={() => handleSort('blueCost')}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                >
-                  Blue{getSortIcon('blueCost')}
-                </th>
-                <th 
-                  style={{ 
-                    padding: '12px 24px', 
-                    textAlign: 'left', 
-                    fontSize: '12px', 
-                    fontWeight: '500', 
-                    color: '#6b7280', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                  onClick={() => handleSort('greenCost')}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                >
-                  Green{getSortIcon('greenCost')}
-                </th>
-                <th 
-                  style={{ 
-                    padding: '12px 24px', 
-                    textAlign: 'left', 
-                    fontSize: '12px', 
-                    fontWeight: '500', 
-                    color: '#6b7280', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                  onClick={() => handleSort('redCost')}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                >
-                  Red{getSortIcon('redCost')}
-                </th>
-                <th 
-                  style={{ 
-                    padding: '12px 24px', 
-                    textAlign: 'left', 
-                    fontSize: '12px', 
-                    fontWeight: '500', 
-                    color: '#6b7280', 
-                    textTransform: 'uppercase', 
-                    letterSpacing: '0.05em',
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                  onClick={() => handleSort('blackCost')}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                >
-                  Black{getSortIcon('blackCost')}
-                </th>
-              </tr>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th
+                      key={header.id}
+                      onClick={header.column.getToggleSortingHandler()}
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#6b7280',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
+                        userSelect: 'none',
+                        borderBottom: '1px solid #e5e7eb'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (header.column.getCanSort()) {
+                          e.currentTarget.style.backgroundColor = '#f3f4f6'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (header.column.getCanSort()) {
+                          e.currentTarget.style.backgroundColor = '#f9fafb'
+                        }
+                      }}
+                    >
+                      <HStack gap={2}>
+                        <Box>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                        </Box>
+                        <SortIcon column={header.column} />
+                      </HStack>
+                    </th>
+                  ))}
+                </tr>
+              ))}
             </thead>
             <tbody>
-              {filteredCards.map((card) => {
-                const cost = parseCost(card.cost)
-                const isSelected = selectedCardIds.includes(card.id)
+              {table.getRowModel().rows.map(row => {
+                const isSelected = selectedCardIds.includes(row.original.id)
                 return (
-                  <tr 
-                    key={card.id} 
-                    style={{ 
-                      borderBottom: '1px solid #e5e7eb',
+                  <tr
+                    key={row.id}
+                    style={{
                       backgroundColor: isSelected ? '#ebf8ff' : 'transparent',
+                      borderBottom: '1px solid #e5e7eb',
                       cursor: allowSelection ? 'pointer' : 'default'
-                    }} 
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isSelected ? '#dbeafe' : '#f9fafb'} 
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isSelected ? '#ebf8ff' : 'transparent'}
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = isSelected ? '#dbeafe' : '#f9fafb'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = isSelected ? '#ebf8ff' : 'transparent'
+                    }}
                     onClick={() => {
-                      if (allowSelection && onCardSelectionChange) {
-                        onCardSelectionChange(card.id, !isSelected)
+                      if (allowSelection) {
+                        row.toggleSelected(!row.getIsSelected())
                       }
                     }}
                   >
-                    {allowSelection && (
-                      <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            e.stopPropagation()
-                            if (onCardSelectionChange) {
-                              onCardSelectionChange(card.id, e.target.checked)
-                            }
-                          }}
-                          style={{
-                            width: '16px',
-                            height: '16px',
-                            cursor: 'pointer'
-                          }}
-                        />
+                    {row.getVisibleCells().map(cell => (
+                      <td
+                        key={cell.id}
+                        style={{
+                          padding: '16px',
+                          fontSize: '14px',
+                          color: '#111827'
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </td>
-                    )}
-                    <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                      #{card.id}
-                    </td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#111827', fontWeight: '500' }}>
-                      {card.points}
-                    </td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#111827' }}>
-                      {cost.WHITE || 0}
-                    </td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#111827' }}>
-                      {cost.BLUE || 0}
-                    </td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#111827' }}>
-                      {cost.GREEN || 0}
-                    </td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#111827' }}>
-                      {cost.RED || 0}
-                    </td>
-                    <td style={{ padding: '16px 24px', fontSize: '14px', color: '#111827' }}>
-                      {cost.BLACK || 0}
-                    </td>
+                    ))}
                   </tr>
                 )
               })}
@@ -621,11 +629,29 @@ export default function DiscoveryCardDefinitionViewer({
         </Box>
       </Box>
 
-      {/* No Results */}
-      {filteredCards.length === 0 && (
-        <Box textAlign="center" py={12}>
-          <Text color="gray.500" fontSize="lg">No discovery cards match your current filters.</Text>
-        </Box>
+      {/* Empty State */}
+      {filteredData.length === 0 && (
+        <EmptyState.Root>
+          <EmptyState.Content>
+            <EmptyState.Indicator>
+              <Box
+                w="12"
+                h="12"
+                borderRadius="full"
+                bg="gray.100"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Text fontSize="lg" color="gray.500">🔍</Text>
+              </Box>
+            </EmptyState.Indicator>
+            <EmptyState.Title>No discovery cards found</EmptyState.Title>
+            <EmptyState.Description>
+              No discovery cards match your current filters. Try adjusting your search criteria.
+            </EmptyState.Description>
+          </EmptyState.Content>
+        </EmptyState.Root>
       )}
     </Box>
   )
