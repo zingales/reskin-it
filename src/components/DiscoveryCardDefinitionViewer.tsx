@@ -10,7 +10,7 @@ import {
   HStack,
   VStack,
   Badge,
-  Input
+  Slider,
 } from '@chakra-ui/react'
 import { 
   useReactTable, 
@@ -46,7 +46,6 @@ export default function DiscoveryCardDefinitionViewer({
 }: DiscoveryCardDefinitionViewerProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [globalFilter, setGlobalFilter] = useState('')
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [filters, setFilters] = useState({
     minPoints: 0,
@@ -94,38 +93,35 @@ export default function DiscoveryCardDefinitionViewer({
   // Define columns
   const columns = useMemo(() => {
     const cols = [
-      // Selection column (if allowed)
-      ...(allowSelection ? [
-        columnHelper.display({
-          id: 'select',
-          header: ({ table }) => (
-            <Checkbox.Root
-              checked={table.getIsAllPageRowsSelected()}
-              onChange={table.getToggleAllPageRowsSelectedHandler()}
-            >
-              <Checkbox.Control />
-            </Checkbox.Root>
-          ),
-          cell: ({ row }) => (
-            <Checkbox.Root
-              checked={row.getIsSelected()}
-              onChange={row.getToggleSelectedHandler()}
-            >
-              <Checkbox.Control />
-            </Checkbox.Root>
-          ),
-          size: 50,
-        })
-      ] : []),
-      
-      // ID column
+              ...(allowSelection ? [
+          columnHelper.display({
+            id: 'select',
+            header: ({ table }) => (
+              <Checkbox.Root
+                defaultChecked={table.getIsAllPageRowsSelected()}
+                onCheckedChange={(details) => table.toggleAllPageRowsSelected(!!details.checked)}
+              >
+                <Checkbox.Control />
+              </Checkbox.Root>
+            ),
+            cell: ({ row }) => (
+              <Checkbox.Root
+                defaultChecked={row.getIsSelected()}
+                onCheckedChange={(details) => row.toggleSelected(!!details.checked)}
+              >
+                <Checkbox.Control />
+              </Checkbox.Root>
+            ),
+            size: 50,
+          })
+        ] : []),
+
       columnHelper.accessor('id', {
         header: 'ID',
         cell: ({ getValue }) => `#${getValue()}`,
         size: 80,
       }),
-      
-      // Points column
+
       columnHelper.accessor('points', {
         header: 'Points',
         cell: ({ getValue }) => (
@@ -135,59 +131,19 @@ export default function DiscoveryCardDefinitionViewer({
         ),
         size: 100,
       }),
-      
-      // Cost columns
-      columnHelper.accessor('cost', {
-        id: 'whiteCost',
-        header: 'White',
-        cell: ({ getValue }) => {
-          const cost = parseCost(getValue())
-          return cost.WHITE || 0
-        },
-        size: 80,
-      }),
-      
-      columnHelper.accessor('cost', {
-        id: 'blueCost',
-        header: 'Blue',
-        cell: ({ getValue }) => {
-          const cost = parseCost(getValue())
-          return cost.BLUE || 0
-        },
-        size: 80,
-      }),
-      
-      columnHelper.accessor('cost', {
-        id: 'greenCost',
-        header: 'Green',
-        cell: ({ getValue }) => {
-          const cost = parseCost(getValue())
-          return cost.GREEN || 0
-        },
-        size: 80,
-      }),
-      
-      columnHelper.accessor('cost', {
-        id: 'redCost',
-        header: 'Red',
-        cell: ({ getValue }) => {
-          const cost = parseCost(getValue())
-          return cost.RED || 0
-        },
-        size: 80,
-      }),
-      
-      columnHelper.accessor('cost', {
-        id: 'blackCost',
-        header: 'Black',
-        cell: ({ getValue }) => {
-          const cost = parseCost(getValue())
-          return cost.BLACK || 0
-        },
-        size: 80,
-      }),
+
+      ...(['WHITE','BLUE','GREEN','RED','BLACK'] as TokenType[]).map(color =>
+        columnHelper.accessor((row) => {
+          const cost = parseCost(row.cost)
+          return cost[color] || 0
+        }, {
+          id: `${color.toLowerCase()}Cost`,
+          header: color,
+          cell: ({ getValue }) => getValue(),
+          size: 80,
+        })
+      )
     ]
-    
     return cols
   }, [allowSelection])
 
@@ -195,19 +151,12 @@ export default function DiscoveryCardDefinitionViewer({
   const filteredData = useMemo(() => {
     return cardDefinitions.filter(card => {
       const cost = parseCost(card.cost)
-      
-      // Filter by points range
-      if (card.points < filters.minPoints || card.points > filters.maxPoints) {
-        return false
-      }
-      
-      // Filter by cost ranges
+      if (card.points < filters.minPoints || card.points > filters.maxPoints) return false
       if (cost.WHITE < filters.minWhiteCost || cost.WHITE > filters.maxWhiteCost) return false
       if (cost.BLUE < filters.minBlueCost || cost.BLUE > filters.maxBlueCost) return false
       if (cost.GREEN < filters.minGreenCost || cost.GREEN > filters.maxGreenCost) return false
       if (cost.RED < filters.minRedCost || cost.RED > filters.maxRedCost) return false
       if (cost.BLACK < filters.minBlackCost || cost.BLACK > filters.maxBlackCost) return false
-      
       return true
     })
   }, [cardDefinitions, filters])
@@ -216,15 +165,9 @@ export default function DiscoveryCardDefinitionViewer({
   const table = useReactTable({
     data: filteredData,
     columns,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-      rowSelection,
-    },
+    state: { sorting, columnFilters, rowSelection },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -238,159 +181,77 @@ export default function DiscoveryCardDefinitionViewer({
     if (onCardSelectionChange) {
       const selectedRows = table.getFilteredSelectedRowModel().rows
       const selectedIds = selectedRows.map(row => row.original.id)
-      
-      // Find cards that were deselected
       const deselectedIds = selectedCardIds.filter(id => !selectedIds.includes(id))
-      // Find cards that were newly selected
       const newlySelectedIds = selectedIds.filter(id => !selectedCardIds.includes(id))
-      
-      // Notify parent of changes
       deselectedIds.forEach(id => onCardSelectionChange(id, false))
       newlySelectedIds.forEach(id => onCardSelectionChange(id, true))
     }
   }, [rowSelection, onCardSelectionChange, selectedCardIds, table])
 
-  // Custom sort icon component
   const SortIcon = ({ column }: { column: { getCanSort: () => boolean; getIsSorted: () => false | 'asc' | 'desc' } }) => {
     if (!column.getCanSort()) return null
-    
     const isSorted = column.getIsSorted()
-    
-    if (isSorted === 'asc') {
-      return <HiChevronUp size={16} />
-    } else if (isSorted === 'desc') {
-      return <HiChevronDown size={16} />
-    } else {
-      return <HiChevronUpDown size={16} color="gray" />
-    }
+    if (isSorted === 'asc') return <HiChevronUp size={16} />
+    if (isSorted === 'desc') return <HiChevronDown size={16} />
+    return <HiChevronUpDown size={16} color="gray" />
   }
 
-  // Range Slider component
-  const RangeSlider = ({ 
-    label, 
-    minValue, 
-    maxValue, 
-    onMinChange, 
-    onMaxChange, 
-    color,
-    min = 0,
-    max = 7
+  const RangeFilter = ({
+    label, minValue, maxValue, onMinChange, onMaxChange, min = 0, max = 7, colorPalette = "gray"
   }: {
     label: string
     minValue: number
     maxValue: number
     onMinChange: (value: number) => void
     onMaxChange: (value: number) => void
-    color: string
     min?: number
     max?: number
+    colorPalette?: string
   }) => {
-    const [isDragging, setIsDragging] = useState<'min' | 'max' | null>(null)
-    const [startX, setStartX] = useState(0)
-    const [startMin, setStartMin] = useState(0)
-    const [startMax, setStartMax] = useState(0)
-
-    const handleMouseDown = (e: React.MouseEvent, type: 'min' | 'max') => {
-      setIsDragging(type)
-      setStartX(e.clientX)
-      setStartMin(minValue)
-      setStartMax(maxValue)
-      e.preventDefault()
-    }
-
-    const handleMouseUp = () => {
-      setIsDragging(null)
-    }
-
-    useEffect(() => {
-      if (isDragging) {
-        const handleMouseMoveEvent = (e: MouseEvent) => {
-          if (!isDragging) return
-
-          const deltaX = e.clientX - startX
-          const sliderWidth = 200 // Approximate slider width
-          const valueChange = Math.round((deltaX / sliderWidth) * (max - min))
-
-          if (isDragging === 'min') {
-            const newMin = Math.max(min, Math.min(maxValue - 1, startMin + valueChange))
-            onMinChange(newMin)
-          } else {
-            const newMax = Math.max(minValue + 1, Math.min(max, startMax + valueChange))
-            onMaxChange(newMax)
-          }
-        }
-
-        document.addEventListener('mousemove', handleMouseMoveEvent)
-        document.addEventListener('mouseup', handleMouseUp)
-        return () => {
-          document.removeEventListener('mousemove', handleMouseMoveEvent)
-          document.removeEventListener('mouseup', handleMouseUp)
-        }
+    const [localValue, setLocalValue] = useState([minValue, maxValue])
+    
+    const handleChange = (details: { value: number[] }) => {
+      if (details.value.length === 2) {
+        setLocalValue(details.value)
       }
-      return undefined
-    }, [isDragging, startX, startMin, startMax, max, maxValue, min, minValue, onMaxChange, onMinChange])
-
-    const minPercent = ((minValue - min) / (max - min)) * 100
-    const maxPercent = ((maxValue - min) / (max - min)) * 100
+    }
+    
+    const handleChangeEnd = (details: { value: number[] }) => {
+      if (details.value.length === 2) {
+        onMinChange(details.value[0])
+        onMaxChange(details.value[1])
+      }
+    }
+    
+    // Update local value when props change
+    useEffect(() => {
+      setLocalValue([minValue, maxValue])
+    }, [minValue, maxValue])
 
     return (
-      <Box>
-        <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>
+      <Box py={2}>
+        <Text fontSize="sm" fontWeight="medium" mb={3}>
           {label}: {minValue} - {maxValue}
         </Text>
-        <Box 
-          position="relative" 
-          w="full" 
-          h="6px" 
-          bg="gray.200" 
-          borderRadius="3px"
-          cursor="pointer"
-        >
-          {/* Filled track */}
-          <Box
-            position="absolute"
-            left={`${minPercent}%`}
-            right={`${100 - maxPercent}%`}
-            h="full"
-            bg={color === 'gray' ? '#6b7280' : color === 'blue' ? '#3b82f6' : color === 'green' ? '#10b981' : color === 'red' ? '#ef4444' : '#6b7280'}
-            borderRadius="3px"
-          />
-          
-          {/* Min thumb */}
-          <Box
-            position="absolute"
-            left={`${minPercent}%`}
-            top="50%"
-            transform="translate(-50%, -50%)"
-            w="16px"
-            h="16px"
-            bg="white"
-            border="2px solid"
-            borderColor={color === 'gray' ? '#6b7280' : color === 'blue' ? '#3b82f6' : color === 'green' ? '#10b981' : color === 'red' ? '#ef4444' : '#6b7280'}
-            borderRadius="full"
-            cursor="grab"
-            onMouseDown={(e) => handleMouseDown(e, 'min')}
-            _active={{ cursor: 'grabbing' }}
-            zIndex={2}
-          />
-          
-          {/* Max thumb */}
-          <Box
-            position="absolute"
-            left={`${maxPercent}%`}
-            top="50%"
-            transform="translate(-50%, -50%)"
-            w="16px"
-            h="16px"
-            bg="white"
-            border="2px solid"
-            borderColor={color === 'gray' ? '#6b7280' : color === 'blue' ? '#3b82f6' : color === 'green' ? '#10b981' : color === 'red' ? '#ef4444' : '#6b7280'}
-            borderRadius="full"
-            cursor="grab"
-            onMouseDown={(e) => handleMouseDown(e, 'max')}
-            _active={{ cursor: 'grabbing' }}
-            zIndex={2}
-          />
+        <Box px={2}>
+          <Slider.Root
+            width="100%"
+            value={localValue}
+            min={min}
+            max={max}
+            step={1}
+            colorPalette={colorPalette}
+            onValueChange={handleChange}
+            onValueChangeEnd={handleChangeEnd}
+            thumbAlignment="center"
+          >
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Range />
+              </Slider.Track>
+              <Slider.Thumbs />
+            </Slider.Control>
+          </Slider.Root>
         </Box>
       </Box>
     )
@@ -401,41 +262,32 @@ export default function DiscoveryCardDefinitionViewer({
       const selectedRows = table.getFilteredSelectedRowModel().rows
       const selectedIds = selectedRows.map(row => row.original.id)
       onSaveEdits(selectedIds)
+      // Clear selection after saving
+      table.toggleAllRowsSelected(false)
     }
   }
 
   const handleClearSelection = () => {
-    if (onCardSelectionChange) {
-      selectedCardIds.forEach(id => onCardSelectionChange(id, false))
-    }
+    table.toggleAllRowsSelected(false)
   }
 
   return (
     <Box w="full">
-      {/* Action Bar for selection */}
-      {allowSelection && selectedCardIds.length > 0 && (
+      {allowSelection && table.getFilteredSelectedRowModel().rows.length > 0 && (
         <ActionBar.Root>
           <ActionBar.Positioner>
             <ActionBar.Content>
               <ActionBar.CloseTrigger />
               <ActionBar.SelectionTrigger>
-                {selectedCardIds.length} selected
+                {table.getFilteredSelectedRowModel().rows.length} selected
               </ActionBar.SelectionTrigger>
               <ActionBar.Separator />
               <HStack gap={3}>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleClearSelection}
-                >
+                <Button size="sm" variant="outline" onClick={handleClearSelection}>
                   Clear Selection
                 </Button>
                 {onSaveEdits && (
-                  <Button
-                    size="sm"
-                    colorScheme="blue"
-                    onClick={handleSaveEdits}
-                  >
+                  <Button size="sm" colorScheme="blue" onClick={handleSaveEdits}>
                     Save Edits
                   </Button>
                 )}
@@ -448,188 +300,140 @@ export default function DiscoveryCardDefinitionViewer({
       {/* Filters */}
       <Box bg="white" rounded="lg" shadow="md" p={6} mb={6}>
         <Text fontSize="xl" fontWeight="semibold" mb={4}>Filters</Text>
-        
         <VStack gap={4} align="stretch">
-          {/* Global search */}
-          <Box>
-            <Text fontSize="sm" fontWeight="medium" mb={2}>Search</Text>
-            <Input
-              placeholder="Search all columns..."
-              value={globalFilter ?? ''}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              size="sm"
-            />
-          </Box>
-
-          {/* Range Filters */}
           <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
-            {/* Points Range Slider */}
-            <RangeSlider
+            <RangeFilter
               label="Points Range"
               minValue={filters.minPoints}
               maxValue={filters.maxPoints}
-              onMinChange={(value) => setFilters(prev => ({ ...prev, minPoints: value }))}
-              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxPoints: value }))}
-              color="blue"
+              onMinChange={(value) => setFilters(p => ({ ...p, minPoints: value }))}
+              onMaxChange={(value) => setFilters(p => ({ ...p, maxPoints: value }))}
               min={0}
               max={5}
+              colorPalette="yellow"
             />
-            
-            {/* White Cost Range Slider */}
-            <RangeSlider
-              label="White Cost"
-              minValue={filters.minWhiteCost}
-              maxValue={filters.maxWhiteCost}
-              onMinChange={(value) => setFilters(prev => ({ ...prev, minWhiteCost: value }))}
-              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxWhiteCost: value }))}
-              color="gray"
-            />
-            
-            {/* Blue Cost Range Slider */}
-            <RangeSlider
-              label="Blue Cost"
-              minValue={filters.minBlueCost}
-              maxValue={filters.maxBlueCost}
-              onMinChange={(value) => setFilters(prev => ({ ...prev, minBlueCost: value }))}
-              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxBlueCost: value }))}
-              color="blue"
-            />
-            
-            {/* Green Cost Range Slider */}
-            <RangeSlider
-              label="Green Cost"
-              minValue={filters.minGreenCost}
-              maxValue={filters.maxGreenCost}
-              onMinChange={(value) => setFilters(prev => ({ ...prev, minGreenCost: value }))}
-              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxGreenCost: value }))}
-              color="green"
-            />
-            
-            {/* Red Cost Range Slider */}
-            <RangeSlider
-              label="Red Cost"
-              minValue={filters.minRedCost}
-              maxValue={filters.maxRedCost}
-              onMinChange={(value) => setFilters(prev => ({ ...prev, minRedCost: value }))}
-              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxRedCost: value }))}
-              color="red"
-            />
-            
-            {/* Black Cost Range Slider */}
-            <RangeSlider
-              label="Black Cost"
-              minValue={filters.minBlackCost}
-              maxValue={filters.maxBlackCost}
-              onMinChange={(value) => setFilters(prev => ({ ...prev, minBlackCost: value }))}
-              onMaxChange={(value) => setFilters(prev => ({ ...prev, maxBlackCost: value }))}
-              color="gray"
-            />
+            <RangeFilter label="White Cost" minValue={filters.minWhiteCost} maxValue={filters.maxWhiteCost}
+              onMinChange={v => setFilters(p => ({ ...p, minWhiteCost: v }))}
+              onMaxChange={v => setFilters(p => ({ ...p, maxWhiteCost: v }))}
+              colorPalette="white" />
+            <RangeFilter label="Blue Cost" minValue={filters.minBlueCost} maxValue={filters.maxBlueCost}
+              onMinChange={v => setFilters(p => ({ ...p, minBlueCost: v }))}
+              onMaxChange={v => setFilters(p => ({ ...p, maxBlueCost: v }))}
+              colorPalette="blue" />
+            <RangeFilter label="Green Cost" minValue={filters.minGreenCost} maxValue={filters.maxGreenCost}
+              onMinChange={v => setFilters(p => ({ ...p, minGreenCost: v }))}
+              onMaxChange={v => setFilters(p => ({ ...p, maxGreenCost: v }))}
+              colorPalette="green" />
+            <RangeFilter label="Red Cost" minValue={filters.minRedCost} maxValue={filters.maxRedCost}
+              onMinChange={v => setFilters(p => ({ ...p, minRedCost: v }))}
+              onMaxChange={v => setFilters(p => ({ ...p, maxRedCost: v }))}
+              colorPalette="red" />
+            <RangeFilter label="Black Cost" minValue={filters.minBlackCost} maxValue={filters.maxBlackCost}
+              onMinChange={v => setFilters(p => ({ ...p, minBlackCost: v }))}
+              onMaxChange={v => setFilters(p => ({ ...p, maxBlackCost: v }))}
+              colorPalette="black" />
           </Grid>
         </VStack>
       </Box>
 
-      {/* Results count */}
       <Box mb={4}>
         <Text color="gray.600">
           Showing {filteredData.length} of {cardDefinitions.length} discovery cards
         </Text>
       </Box>
 
-      {/* Table */}
-      <Box bg="white" rounded="lg" shadow="md" overflow="hidden">
-        <Box overflowX="auto">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead style={{ backgroundColor: '#f9fafb' }}>
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <th
-                      key={header.id}
-                      onClick={header.column.getToggleSortingHandler()}
+              <Box bg="white" rounded="lg" shadow="md" overflow="hidden">
+          <Box overflowX="auto">
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ backgroundColor: '#f9fafb' }}>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <th
+                        key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
+                        style={{
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: '#6b7280',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          cursor: header.column.getCanSort() ? 'pointer' : 'default',
+                          userSelect: 'none',
+                          borderBottom: '1px solid #e5e7eb'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (header.column.getCanSort()) {
+                            e.currentTarget.style.backgroundColor = '#f3f4f6'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (header.column.getCanSort()) {
+                            e.currentTarget.style.backgroundColor = '#f9fafb'
+                          }
+                        }}
+                      >
+                        <HStack gap={2}>
+                          <Box>
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </Box>
+                          <SortIcon column={header.column} />
+                        </HStack>
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map(row => {
+                  const isSelected = row.getIsSelected()
+                  return (
+                    <tr
+                      key={row.id}
                       style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        color: '#6b7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
-                        userSelect: 'none',
-                        borderBottom: '1px solid #e5e7eb'
+                        backgroundColor: isSelected ? '#ebf8ff' : 'transparent',
+                        borderBottom: '1px solid #e5e7eb',
+                        cursor: allowSelection ? 'pointer' : 'default'
                       }}
                       onMouseEnter={(e) => {
-                        if (header.column.getCanSort()) {
-                          e.currentTarget.style.backgroundColor = '#f3f4f6'
-                        }
+                        e.currentTarget.style.backgroundColor = isSelected ? '#dbeafe' : '#f9fafb'
                       }}
                       onMouseLeave={(e) => {
-                        if (header.column.getCanSort()) {
-                          e.currentTarget.style.backgroundColor = '#f9fafb'
+                        e.currentTarget.style.backgroundColor = isSelected ? '#ebf8ff' : 'transparent'
+                      }}
+                      onClick={(e) => {
+                        // Prevent row click when clicking on checkbox
+                        if (e.target instanceof HTMLElement && 
+                            (e.target.closest('[role="checkbox"]') || e.target.closest('input[type="checkbox"]'))) {
+                          return
+                        }
+                        if (allowSelection) {
+                          row.toggleSelected(!row.getIsSelected())
                         }
                       }}
                     >
-                      <HStack gap={2}>
-                        <Box>
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </Box>
-                        <SortIcon column={header.column} />
-                      </HStack>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map(row => {
-                const isSelected = selectedCardIds.includes(row.original.id)
-                return (
-                  <tr
-                    key={row.id}
-                    style={{
-                      backgroundColor: isSelected ? '#ebf8ff' : 'transparent',
-                      borderBottom: '1px solid #e5e7eb',
-                      cursor: allowSelection ? 'pointer' : 'default'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#dbeafe' : '#f9fafb'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#ebf8ff' : 'transparent'
-                    }}
-                    onClick={() => {
-                      if (allowSelection) {
-                        row.toggleSelected(!row.getIsSelected())
-                      }
-                    }}
-                  >
-                    {row.getVisibleCells().map(cell => (
-                      <td
-                        key={cell.id}
-                        style={{
-                          padding: '16px',
-                          fontSize: '14px',
-                          color: '#111827'
-                        }}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      {row.getVisibleCells().map(cell => (
+                        <td
+                          key={cell.id}
+                          style={{
+                            padding: '16px',
+                            fontSize: '14px',
+                            color: '#111827'
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </Box>
         </Box>
-      </Box>
 
-      {/* Empty State */}
       {filteredData.length === 0 && (
         <EmptyState.Root>
           <EmptyState.Content>

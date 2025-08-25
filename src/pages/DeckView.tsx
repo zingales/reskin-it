@@ -209,25 +209,6 @@ export default function DeckView() {
     
     return (
       <Box>
-        <Flex justify="space-between" align="center" mb={6}>
-          <Heading size="md">Card Definitions</Heading>
-          {isOwner && (
-            <Button
-              onClick={handleSaveCardSelection}
-              colorScheme="blue"
-              size="sm"
-            >
-              Save Selection
-            </Button>
-          )}
-        </Flex>
-        
-        <Box mb={4}>
-          <Text fontSize="sm" color="gray.600">
-            Selected: {selectedCardIds.length} cards
-          </Text>
-        </Box>
-
         {deck.gameCardDefinition.tableName === 'TokenEngineCardDefinition' && (
           <TokenEngineCardDefinitionViewer
             cardDefinitions={cardDefinitions as TokenEngineCardDefinition[]}
@@ -303,23 +284,6 @@ export default function DeckView() {
                   Created {deck.createdAt ? new Date(deck.createdAt).toLocaleDateString() : 'Unknown date'}
                 </Text>
               </Box>
-            </Box>
-
-            {/* Simple Tab-like Navigation */}
-            <Box mb={8}>
-              <Flex gap={1} borderBottom="1px" borderColor="gray.200">
-                <Box
-                  px={4}
-                  py={2}
-                  borderBottom="2px"
-                  borderColor="blue.500"
-                  color="blue.600"
-                  fontWeight="medium"
-                  cursor="pointer"
-                >
-                  Card Definitions
-                </Box>
-              </Flex>
             </Box>
 
             {/* Card Definitions Content */}
